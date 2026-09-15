@@ -104,17 +104,45 @@ fn a_watch_without_a_root_stops_at_once() {
     assert!(recorder.events().is_empty());
 }
 
-/// A root with no lockfile is the same as no root, and can be changed while
-/// the watch sleeps.
+/// Reconfiguring ends the current follow and stopping returns promptly, rather
+/// than waiting out the ten-second nap.
+///
+/// Nothing is asserted about events: a configured root sends the watch looking
+/// at every installed patchline, so a machine with a League client open really
+/// does have one to follow and this test must not depend on which machine runs
+/// it.
 #[test]
-fn reconfiguring_wakes_the_sleeping_watch() {
+fn reconfiguring_and_stopping_do_not_wait_out_the_nap() {
     let dir = tempfile::tempdir().unwrap();
-    let (recorder, observer) = recorder();
+    let (_recorder, observer) = recorder();
     let mut watch = LcuWatch::start(Some(dir.path().to_path_buf()), observer);
     thread::sleep(Duration::from_millis(50));
     watch.reconfigure(None);
     let started = std::time::Instant::now();
     watch.stop();
     assert!(started.elapsed() < Duration::from_secs(2));
-    assert!(recorder.events().is_empty());
+}
+
+/// The configured root leads, discovered installs follow it, and one that is
+/// already configured is not visited twice.
+#[test]
+fn the_configured_root_leads_the_candidates() {
+    let configured = PathBuf::from("C:/Riot Games/League of Legends");
+    let pbe = PathBuf::from("C:/Riot Games/League of Legends (PBE)");
+
+    let roots = candidate_roots(&Some(configured.clone()), vec![pbe.clone()]);
+    assert_eq!(roots, vec![configured.clone(), pbe.clone()]);
+
+    let deduped = candidate_roots(
+        &Some(configured.clone()),
+        vec![configured.clone(), pbe.clone()],
+    );
+    assert_eq!(deduped, vec![configured, pbe]);
+}
+
+/// With nothing configured the watch hunts for nothing, whatever is installed.
+#[test]
+fn no_configured_root_means_no_candidates() {
+    assert!(candidate_roots(&None, Vec::new()).is_empty());
+    assert!(find_live_client(&None).is_none());
 }

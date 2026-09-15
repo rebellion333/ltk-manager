@@ -148,16 +148,58 @@ impl Shared {
     }
 }
 
+/// Where a live lockfile might be, configured install first.
+///
+/// A player with several installs runs whichever one they queued on, and the
+/// lockfile belongs to the client that is running rather than to the install
+/// the manager is set up for. Following only the configured root leaves a PBE
+/// game followed by nobody, and silent while it happens, which is worse than
+/// being wrong out loud: the watch looks healthy and reports nothing.
+///
+/// The configured root leads, so the ordinary case is one `stat` and no
+/// question asked of the Riot Client.
+fn candidate_roots(configured: &LeagueRoot, discovered: Vec<PathBuf>) -> Vec<PathBuf> {
+    let mut roots: Vec<PathBuf> = configured.clone().into_iter().collect();
+    for root in discovered {
+        if !roots.contains(&root) {
+            roots.push(root);
+        }
+    }
+    roots
+}
+
+/// The first candidate whose lockfile names a live client.
+///
+/// With nothing configured the watch hunts for nothing. No League path means
+/// the manager is not set up for League at all, and following a client it was
+/// never pointed at would be reaching past what the reader asked for.
+fn find_live_client(configured: &LeagueRoot) -> Option<(PathBuf, LeagueLockfile)> {
+    configured.as_ref()?;
+    let discovered = crate::launcher::install::installed_patchlines()
+        .into_iter()
+        .map(|patchline| patchline.root)
+        .collect();
+    candidate_roots(configured, discovered)
+        .into_iter()
+        .find_map(|root| {
+            let lockfile = LeagueLockfile::read(&root).filter(LeagueLockfile::is_live)?;
+            Some((root, lockfile))
+        })
+}
+
 fn run(shared: Arc<Shared>, observer: Arc<dyn LcuObserver>) {
     while !shared.is_stopped() {
-        let lockfile = shared
-            .root()
-            .and_then(|root| LeagueLockfile::read(&root))
-            .filter(LeagueLockfile::is_live);
-        let Some(lockfile) = lockfile else {
+        let configured = shared.root();
+        let Some((root, lockfile)) = find_live_client(&configured) else {
             shared.nap(LOOK_INTERVAL);
             continue;
         };
+        if Some(&root) != configured.as_ref() {
+            tracing::info!(
+                "The running client is {}, which is not the configured install",
+                root.display()
+            );
+        }
 
         let Some(client) = LcuClient::new(&lockfile) else {
             shared.nap(LOOK_INTERVAL);
@@ -168,9 +210,13 @@ fn run(shared: Arc<Shared>, observer: Arc<dyn LcuObserver>) {
         observer.on_event(LcuEvent::ClientUp {
             port: lockfile.port,
         });
-        let root = shared.root();
 
-        while !shared.is_stopped() && shared.root() == root && lockfile_still_live(&root) {
+        // The configured root is re-read every pass, so a settings change ends
+        // the follow even when the client it names is a different install.
+        while !shared.is_stopped()
+            && shared.root() == configured
+            && lockfile_still_live(&Some(root.clone()))
+        {
             match follow_socket(&shared, &lockfile, &client, &observer) {
                 FollowEnd::Stopped => break,
                 FollowEnd::Lost => shared.nap(RECONNECT_DELAY),
