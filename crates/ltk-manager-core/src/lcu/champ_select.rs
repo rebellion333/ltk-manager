@@ -21,7 +21,7 @@ pub struct ChampSelectSession {
     pub timer: Timer,
     pub bench_enabled: bool,
     pub bench_champions: Vec<BenchChampion>,
-    pub trades: Vec<serde_json::Value>,
+    pub trades: Vec<Trade>,
 }
 
 #[derive(Debug, Clone, Default, Deserialize)]
@@ -63,6 +63,28 @@ pub struct BenchChampion {
     pub champion_id: i32,
 }
 
+/// One champion-trade slot with a teammate.
+///
+/// The client publishes a slot per teammate whether or not anything is
+/// happening in it, so the presence of a trade is not the presence of an offer:
+/// a Practice Tool select, where no trade is possible at all, still carries
+/// them. Only [`Trade::is_in_flight`] says something is actually pending.
+#[derive(Debug, Clone, Default, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+pub struct Trade {
+    pub id: i64,
+    pub cell_id: i64,
+    /// `AVAILABLE`, `BUSY`, `INVALID`, `SENT`, `RECEIVED` and others.
+    pub state: String,
+}
+
+impl Trade {
+    /// Whether an offer is open in this slot, either way round.
+    pub fn is_in_flight(&self) -> bool {
+        self.state.eq_ignore_ascii_case("SENT") || self.state.eq_ignore_ascii_case("RECEIVED")
+    }
+}
+
 /// What crosses to the frontend: the local player's part of the session.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(feature = "ts", derive(ts_rs::TS, specta::Type))]
@@ -79,8 +101,12 @@ pub struct ChampSelectView {
     pub timer_phase: String,
     #[cfg_attr(feature = "ts", ts(type = "number"))]
     pub time_left_ms: i64,
-    /// Whether the champion can still change after a lock: a trade is pending
-    /// or the ARAM bench is open.
+    /// Whether the champion can still change after a lock: an offered trade is
+    /// open, or the ARAM bench is.
+    ///
+    /// A trade *slot* does not count. The client lists one per teammate in
+    /// every mode, so counting those reports every Practice Tool select as
+    /// still changeable, which a live capture on 2026-09-15 is what caught.
     pub can_still_change: bool,
     /// Champions on the ARAM bench, for a reroll or a swap.
     pub bench_champion_ids: Vec<i32>,
@@ -126,7 +152,7 @@ impl ChampSelectSession {
             hovered_champion_id,
             timer_phase: self.timer.phase.clone(),
             time_left_ms: self.timer.adjusted_time_left_in_phase,
-            can_still_change: self.bench_enabled || !self.trades.is_empty(),
+            can_still_change: self.bench_enabled || self.trades.iter().any(Trade::is_in_flight),
             bench_champion_ids: self.bench_champions.iter().map(|b| b.champion_id).collect(),
         }
     }

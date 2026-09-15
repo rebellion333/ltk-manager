@@ -91,7 +91,7 @@ fn aram_reads_the_cell_and_keeps_the_change_open() {
 }
 
 #[test]
-fn a_pending_trade_keeps_the_change_open_in_draft() {
+fn an_offered_trade_keeps_the_change_open_in_draft() {
     let s = session(serde_json::json!({
         "localPlayerCellId": 0,
         "myTeam": [{"cellId": 0, "championId": 157, "championPickIntent": 0}],
@@ -100,6 +100,38 @@ fn a_pending_trade_keeps_the_change_open_in_draft() {
         "timer": {"phase": "FINALIZATION"}
     }));
     assert!(s.view().can_still_change);
+}
+
+/// Recorded from a live Practice Tool select on 2026-09-15: the client carries
+/// a trade slot per teammate with nothing happening in it, and reading those as
+/// pending offers reported a champion that could not change as changeable.
+#[test]
+fn idle_trade_slots_are_not_an_offer() {
+    let s = session(serde_json::json!({
+        "localPlayerCellId": 0,
+        "myTeam": [{"cellId": 0, "championId": 131, "championPickIntent": 0}],
+        "actions": [[{"id": 1, "actorCellId": 0, "championId": 131, "completed": true, "type": "pick"}]],
+        "trades": [
+            {"id": 1, "cellId": 1, "state": "AVAILABLE"},
+            {"id": 2, "cellId": 2, "state": "INVALID"},
+            {"id": 3, "cellId": 3, "state": "BUSY"}
+        ],
+        "timer": {"phase": "FINALIZATION", "adjustedTimeLeftInPhase": 10000}
+    }));
+    assert!(!s.view().can_still_change);
+}
+
+/// A trade this build does not know the spelling of is not treated as an offer,
+/// so an unknown state never claims the champion is still changing.
+#[test]
+fn an_unknown_trade_state_is_not_an_offer() {
+    let s = session(serde_json::json!({
+        "localPlayerCellId": 0,
+        "myTeam": [{"cellId": 0, "championId": 131, "championPickIntent": 0}],
+        "trades": [{"id": 1, "cellId": 1, "state": "REHEARSING"}, {"id": 2, "cellId": 2}],
+        "timer": {"phase": "FINALIZATION"}
+    }));
+    assert!(!s.view().can_still_change);
 }
 
 #[test]
