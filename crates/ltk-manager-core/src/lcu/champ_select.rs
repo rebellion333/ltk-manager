@@ -112,6 +112,30 @@ pub struct ChampSelectView {
     pub bench_champion_ids: Vec<i32>,
 }
 
+impl ChampSelectView {
+    /// Whether anything a consumer acts on moved.
+    ///
+    /// Everything but the clock. The client republishes the session on its own
+    /// cadence and on every other player's action, so comparing whole views
+    /// announces a change several times a second that is only the timer
+    /// counting down: a live draft on 2026-09-15 produced twenty changes of
+    /// which seven were real.
+    ///
+    /// Nothing safety-critical reads [`time_left_ms`](Self::time_left_ms) off
+    /// an announcement, which is what makes suppressing those safe. A stale
+    /// clock always reads as more time left than there is, so a decision about
+    /// whether a build still fits re-reads the session rather than trusting a
+    /// payload that has been sitting in a store.
+    pub fn differs_meaningfully_from(&self, other: &Self) -> bool {
+        self.game_id != other.game_id
+            || self.locked_champion_id != other.locked_champion_id
+            || self.hovered_champion_id != other.hovered_champion_id
+            || self.timer_phase != other.timer_phase
+            || self.can_still_change != other.can_still_change
+            || self.bench_champion_ids != other.bench_champion_ids
+    }
+}
+
 impl ChampSelectSession {
     /// The local player's part of the session.
     pub fn view(&self) -> ChampSelectView {

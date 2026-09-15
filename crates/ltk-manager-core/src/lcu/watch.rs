@@ -331,8 +331,9 @@ impl Tracker {
             }
             (Some(_), None) => observer.on_event(LcuEvent::ChampSelectEnded),
             (Some(previous), Some(view)) => {
+                let worth_saying = view.differs_meaningfully_from(&previous);
                 self.champ_select = Some(view.clone());
-                if previous != view {
+                if worth_saying {
                     observer.on_event(LcuEvent::ChampSelectChanged(view));
                 }
             }

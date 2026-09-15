@@ -1,5 +1,7 @@
-//! The fixtures below are hand-written from the session's documented shape.
-//! Phase 2 replaces them with captures from a live client.
+//! A fixture is hand-written from the session's documented shape unless its
+//! test says otherwise. The ones that name a date were recorded off a live
+//! client, and each of those exists because the shape it carries contradicted
+//! what the documented one implied.
 
 use super::*;
 
@@ -151,6 +153,69 @@ fn other_players_do_not_leak_into_the_view() {
     let v = s.view();
     assert_eq!(v.locked_champion_id, None);
     assert_eq!(v.hovered_champion_id, None);
+}
+
+/// Recorded from a live draft on 2026-09-15. Twitch was banned while Garen was
+/// hovered, and a ban is not a pick: reading the ban as the local player's
+/// champion would have swapped the mod to the banned one.
+#[test]
+fn a_ban_does_not_move_the_hover() {
+    let s = session(serde_json::json!({
+        "localPlayerCellId": 0,
+        "myTeam": [{"cellId": 0, "championId": 0, "championPickIntent": 86}],
+        "actions": [
+            [{"id": 1, "actorCellId": 0, "championId": 29, "completed": true, "isInProgress": false, "type": "ban"}],
+            [{"id": 2, "actorCellId": 0, "championId": 0, "completed": false, "isInProgress": false, "type": "pick"}]
+        ],
+        "timer": {"phase": "BAN_PICK", "adjustedTimeLeftInPhase": 22901}
+    }));
+    let v = s.view();
+    assert_eq!(
+        v.hovered_champion_id,
+        Some(86),
+        "Garen, not the banned Twitch"
+    );
+    assert_eq!(v.locked_champion_id, None);
+}
+
+/// The clock ticking is not news, and everything else is.
+#[test]
+fn only_the_clock_moving_is_not_a_change() {
+    let base = ChampSelectView {
+        game_id: 1624388916,
+        locked_champion_id: Some(86),
+        hovered_champion_id: None,
+        timer_phase: "FINALIZATION".into(),
+        time_left_ms: 30000,
+        can_still_change: false,
+        bench_champion_ids: Vec::new(),
+    };
+
+    let ticked = ChampSelectView {
+        time_left_ms: 12442,
+        ..base.clone()
+    };
+    assert!(!ticked.differs_meaningfully_from(&base));
+
+    // The trade that took Garen to Anivia, which is the change that matters.
+    let traded = ChampSelectView {
+        locked_champion_id: Some(34),
+        time_left_ms: 27110,
+        ..base.clone()
+    };
+    assert!(traded.differs_meaningfully_from(&base));
+
+    let offered = ChampSelectView {
+        can_still_change: true,
+        ..base.clone()
+    };
+    assert!(offered.differs_meaningfully_from(&base));
+
+    let next_phase = ChampSelectView {
+        timer_phase: "GAME_STARTING".into(),
+        ..base.clone()
+    };
+    assert!(next_phase.differs_meaningfully_from(&base));
 }
 
 #[test]
