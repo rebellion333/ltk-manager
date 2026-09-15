@@ -95,6 +95,8 @@ migrated![
     // Launcher
     check_install_mismatch,
     switch_league_install,
+    // League client
+    get_lcu_snapshot,
 ];
 
 /// The builder the bindings are generated from and the handler is built out of.

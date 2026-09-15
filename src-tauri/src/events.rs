@@ -39,6 +39,10 @@ impl EventSink for TauriEventSink {
             BackendEvent::SessionChanged(session) => self.app_handle.emit(name, session),
             BackendEvent::SessionGameRunning(session) => self.app_handle.emit(name, session),
             BackendEvent::SessionEnded(session) => self.app_handle.emit(name, session),
+            BackendEvent::LcuClientChanged(state) => self.app_handle.emit(name, state),
+            BackendEvent::GameflowChanged(phase) => self.app_handle.emit(name, phase),
+            BackendEvent::ChampSelectStarted(view) => self.app_handle.emit(name, view),
+            BackendEvent::ChampSelectChanged(view) => self.app_handle.emit(name, view),
             BackendEvent::HashtableSyncProgress(progress) => self.app_handle.emit(name, progress),
             BackendEvent::ExtractProgress(progress) => self.app_handle.emit(name, progress),
             BackendEvent::ReferenceWalkProgress(progress) => self.app_handle.emit(name, progress),
@@ -46,6 +50,7 @@ impl EventSink for TauriEventSink {
             | BackendEvent::ChecksumMismatchesUpdated
             | BackendEvent::WadReportsUpdated
             | BackendEvent::ModHealthVerdictsUpdated
+            | BackendEvent::ChampSelectEnded
             | BackendEvent::LibraryChanged => self.app_handle.emit(name, ()),
         };
 

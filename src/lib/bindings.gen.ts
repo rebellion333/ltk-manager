@@ -328,6 +328,13 @@ export const commands = {
 	 *  next start.
 	 */
 	switchLeagueInstall: (installRoot: string) => __TAURI_INVOKE<({ ok: true; value: null }) & { error?: never } | ({ ok: false; error: AppErrorResponse }) & { value?: never }>("switch_league_install", { installRoot }),
+	/**
+	 *  What the League client watch last saw.
+	 * 
+	 *  What a frontend asks on mount: an event that fired before the webview did
+	 *  announced itself to nobody.
+	 */
+	getLcuSnapshot: () => __TAURI_INVOKE<({ ok: true; value: LcuSnapshot }) & { error?: never } | ({ ok: false; error: AppErrorResponse }) & { value?: never }>("get_lcu_snapshot"),
 };
 
 /* Types */
@@ -384,7 +391,7 @@ export type AnimationGraph = {
  */
 export type AppErrorResponse = 
 /**  An external tool installation failed. */
-{ code: "INTEGRATION"; error: IntegrationError } |
+{ code: "INTEGRATION"; error: IntegrationError } | 
 /**  File system I/O failed. */
 { code: "IO"; detail: string } | 
 /**  JSON could not be read or written. */
@@ -716,6 +723,25 @@ export type Category =
 /**  Mod library state checks (index integrity). */
 "library";
 
+/**  What crosses to the frontend: the local player's part of the session. */
+export type ChampSelectView = {
+	gameId: number,
+	/**  The champion the local player has locked, once they have. */
+	lockedChampionId: number | null,
+	/**  The champion the local player is hovering, while they have not locked. */
+	hoveredChampionId: number | null,
+	/**  The timer phase, as the client spells it. */
+	timerPhase: string,
+	timeLeftMs: number,
+	/**
+	 *  Whether the champion can still change after a lock: a trade is pending
+	 *  or the ARAM bench is open.
+	 */
+	canStillChange: boolean,
+	/**  Champions on the ARAM bench, for a reroll or a swap. */
+	benchChampionIds: number[],
+};
+
 /**  One named spell and every file declaring its object. */
 export type CharacterSpell = {
 	/**  The object's path hash, as `0x` and eight hex digits. */
@@ -731,13 +757,13 @@ export type CharacterSpell = {
 };
 
 /**  The character spell catalog and the index state supplying it. */
-export type CharacterSpells =
+export type CharacterSpells = 
 /**  Nothing has warmed the index. */
-({ status: "absent" }) & { error?: never } |
+({ status: "absent" }) & { error?: never } | 
 /**  The catalog is waiting for an index build. */
-({ status: "building" }) & { error?: never } |
+({ status: "building" }) & { error?: never } | 
 /**  The last index build failed. */
-{ status: "failed"; error: AppErrorResponse } |
+{ status: "failed"; error: AppErrorResponse } | 
 /**  Every named spell for the requested character. */
 {
 	status: "ready",
@@ -1420,38 +1446,38 @@ export type InstallMismatch = {
 };
 
 /**  The requested installation change. */
-export type IntegrationAction =
+export type IntegrationAction = 
 /**  Install or update to a verified stable release. */
-"install" |
+"install" | 
 /**  Install the executable without adding context menus. */
-"installOnly" |
+"installOnly" | 
 /**  Restore the installed release's files. */
-"repair" |
+"repair" | 
 /**  Remove owned registrations and executable files. */
-"uninstall" |
+"uninstall" | 
 /**  Register classic context menus. */
-"enableMenu" |
+"enableMenu" | 
 /**  Restore the registrations replaced by Manager. */
 "disableMenu";
 
 /**  A retryable integration failure. */
-export type IntegrationError =
+export type IntegrationError = 
 /**  No supported Windows architecture is available. */
-{ kind: "unsupported" } |
+{ kind: "unsupported" } | 
 /**  Another mutation holds the installation lock. */
-{ kind: "busy" } |
+{ kind: "busy" } | 
 /**  Explorer registrations changed outside Manager. */
-{ kind: "conflict" } |
+{ kind: "conflict" } | 
 /**  No managed installation is available. */
-{ kind: "notInstalled" } |
+{ kind: "notInstalled" } | 
 /**  A receipt is invalid or newer than this reader. */
-{ kind: "invalidReceipt" } |
+{ kind: "invalidReceipt" } | 
 /**  A release cannot be used by this adapter. */
-{ kind: "release"; detail: string } |
+{ kind: "release"; detail: string } | 
 /**  Downloaded bytes do not match the release digest. */
-{ kind: "integrity" } |
+{ kind: "integrity" } | 
 /**  The user cancelled before registration. */
-{ kind: "cancelled" } |
+{ kind: "cancelled" } | 
 /**  An operating system or transport operation failed. */
 { kind: "operation"; detail: string };
 
@@ -1480,21 +1506,21 @@ export type IntegrationRelease = {
 };
 
 /**  A stage of an installation operation. */
-export type IntegrationStage =
+export type IntegrationStage = 
 /**  Resolving release metadata. */
-"checking" |
+"checking" | 
 /**  Downloading and verifying release files. */
-"downloading" |
+"downloading" | 
 /**  Applying the executable installation. */
-"installing" |
+"installing" | 
 /**  Changing Explorer registrations. */
-"registering" |
+"registering" | 
 /**  Removing owned files. */
-"removing" |
+"removing" | 
 /**  The requested operation completed. */
-"complete" |
+"complete" | 
 /**  The operation failed and can be inspected. */
-"failed" |
+"failed" | 
 /**  The download was cancelled before registration. */
 "cancelled";
 
@@ -1600,6 +1626,16 @@ export type LauncherError =
  */
 { kind: "OTHER"; message: string };
 
+/**  What the watch last saw, for a caller that arrives after the events did. */
+export type LcuSnapshot = {
+	connected: boolean,
+	port: number | null,
+	/**  The gameflow phase as the client spells it, once one was read. */
+	phase: string | null,
+	/**  The champion select being followed, while there is one. */
+	champSelect: ChampSelectView | null,
+};
+
 /**
  *  The value a leaf edit sets, in the shape its widget holds.
  * 
@@ -1695,31 +1731,31 @@ export type MaterialWarning =
 { kind: "textureNotFound"; name: string; path: string };
 
 /**  An explicit replacement decision for existing context menus. */
-export type MenuConflictPolicy =
+export type MenuConflictPolicy = 
 /**  Preserve another installation's registrations. */
-"preserve" |
+"preserve" | 
 /**  Replace observed registrations, keeping their backup. */
 "replace";
 
 /**  An observed classic context-menu state. */
-export type MenuStatus =
+export type MenuStatus = 
 /**  No menus are registered. */
-"absent" |
+"absent" | 
 /**  All menus match the Manager receipt. */
-"enabled" |
+"enabled" | 
 /**  Existing menus are not owned by this installation. */
-"external" |
+"external" | 
 /**  Registrations changed or an operation was interrupted. */
 "changed";
 
 /**  The movement class and its written speed or duration. */
-export type MissileMovement =
+export type MissileMovement = 
 /**  Constant speed in engine units per second. */
-{ kind: "fixedSpeed"; speed: number | null } |
+{ kind: "fixedSpeed"; speed: number | null } | 
 /**  A fixed travel duration in seconds. */
-{ kind: "fixedTime"; duration: number | null } |
+{ kind: "fixedTime"; duration: number | null } | 
 /**  A class whose trajectory is not implemented. */
-{ kind: "unsupported"; class_hash: string } |
+{ kind: "unsupported"; class_hash: string } | 
 /**  No movement component was written. */
 { kind: "missing" };
 
@@ -2330,9 +2366,9 @@ export type SpellIssue = {
 };
 
 /**  Why a missile field could not be used. */
-export type SpellIssueKind =
+export type SpellIssueKind = 
 /**  A written value has the wrong type or is not finite. */
-"invalid" |
+"invalid" | 
 /**  The isolated preview does not evaluate this field. */
 "unsupported";
 
@@ -2456,9 +2492,9 @@ export type SyncGroup = {
 };
 
 /**  A supported external tool. */
-export type Tool =
+export type Tool = 
 /**  WAD extraction and hashtable tools. */
-"wadtools" |
+"wadtools" | 
 /**  Texture conversion and Explorer tools. */
 "tex-toolz";
 

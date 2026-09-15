@@ -51,6 +51,11 @@ pub(crate) fn save_settings_inner(
         tracing::error!(error = ?e, "Could not apply the new settings to the launcher");
     }
 
+    // The lockfile lives under the League path, so a moved install is a
+    // different client to follow.
+    let lcu: State<'_, crate::commands::LcuState> = app_handle.state();
+    lcu.reconfigure(&settings.config);
+
     // Rebuilt rather than toggled, because turning the setting off has to drop
     // what was spooled under the old answer rather than hold it back.
     let telemetry = crate::telemetry::state(app_handle);

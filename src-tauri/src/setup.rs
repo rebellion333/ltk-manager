@@ -105,6 +105,7 @@ pub fn run(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
 
     let launcher_state = LauncherState::new(&app_handle, &settings.config)?;
     let launcher = Arc::clone(launcher_state.launcher());
+    let lcu_state = crate::commands::LcuState::new(&app_handle, &settings.config);
 
     app.manage(settings_state);
     app.manage(patcher_state);
@@ -114,6 +115,7 @@ pub fn run(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     crate::telemetry::install(&telemetry_state);
     app.manage(telemetry_state);
     app.manage(launcher_state);
+    app.manage(lcu_state);
     app.manage(crate::commands::launcher::LaunchState::default());
     app.manage(linked_bins);
     app.manage(checksum_mismatches);
@@ -198,6 +200,11 @@ pub fn handle_run_event(app_handle: &tauri::AppHandle, event: tauri::RunEvent) {
         // five minutes waiting for a game that will never come now.
         let launcher: tauri::State<'_, LauncherState> = app_handle.state();
         launcher.launcher().shutdown();
+
+        // Its thread blocks on the client's socket, so it is told to stop
+        // rather than left to notice the process going away.
+        let lcu: tauri::State<'_, crate::commands::LcuState> = app_handle.state();
+        lcu.shutdown();
     }
 }
 

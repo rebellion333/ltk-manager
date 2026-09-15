@@ -20,6 +20,9 @@ pub use crate::launcher::{
     LaunchProgress, LaunchStage, SessionChanged, SessionEnded, SessionGameRunning, SessionStarted,
 };
 
+/// As above, for what the League client watch reports.
+pub use crate::lcu::{ChampSelectView, GameflowChanged, LcuClientState};
+
 /// As above, for the payload the layout migration defines beside itself.
 pub use crate::mods::LayoutMigrationReport;
 
@@ -415,6 +418,17 @@ declare_events! {
     SessionGameRunning(SessionGameRunning) => "session-game-running",
     /// A live session ended, with the client's own reason when it gave one.
     SessionEnded(SessionEnded) => "session-ended",
+    /// A League client appeared or went away. Read-only: the watch behind it
+    /// never operates the account.
+    LcuClientChanged(LcuClientState) => "lcu-client-changed",
+    /// The League client's gameflow phase, at connect and on every change.
+    GameflowChanged(GameflowChanged) => "gameflow-changed",
+    /// Champion select began, with the local player's part of it.
+    ChampSelectStarted(ChampSelectView) => "champ-select-started",
+    /// The local player's hover, lock, timer or bench changed.
+    ChampSelectChanged(ChampSelectView) => "champ-select-changed",
+    /// Champion select is over: a game is starting, or the lobby dodged.
+    ChampSelectEnded => "champ-select-ended",
     /// A hashtable sync advanced. Throttled by its emitter.
     HashtableSyncProgress(HashtableSyncProgress) => "hashtable-sync-progress",
     /// An extract of game chunks to disk advanced. Throttled by its emitter.

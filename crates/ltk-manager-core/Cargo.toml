@@ -63,6 +63,8 @@ tar = { workspace = true }
 tempfile = { workspace = true }
 thiserror = { workspace = true }
 tracing = { workspace = true }
+tungstenite = { workspace = true }
+native-tls = { workspace = true }
 ts-rs = { workspace = true, optional = true }
 uuid = { workspace = true }
 walkdir = { workspace = true }
