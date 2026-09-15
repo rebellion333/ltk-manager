@@ -51,10 +51,22 @@ pub struct Action {
 #[serde(rename_all = "camelCase", default)]
 pub struct Timer {
     /// `PLANNING`, `BAN_PICK`, `FINALIZATION`, `GAME_STARTING`.
+    ///
+    /// The names describe the mode they were written for rather than what is
+    /// happening: an ARAM select, which has no bans, still opens in
+    /// `BAN_PICK`, and `BAN_PICK` in draft covers bans and picks as sub-phases
+    /// with a clock that restarts between them.
     pub phase: String,
     pub adjusted_time_left_in_phase: i64,
     pub total_time_in_phase: i64,
     pub is_infinite: bool,
+}
+
+impl Timer {
+    /// Whether champion select is over and the game is being handed the match.
+    pub fn is_game_starting(&self) -> bool {
+        self.phase.eq_ignore_ascii_case("GAME_STARTING")
+    }
 }
 
 #[derive(Debug, Clone, Default, Deserialize)]
@@ -176,7 +188,8 @@ impl ChampSelectSession {
             hovered_champion_id,
             timer_phase: self.timer.phase.clone(),
             time_left_ms: self.timer.adjusted_time_left_in_phase,
-            can_still_change: self.bench_enabled || self.trades.iter().any(Trade::is_in_flight),
+            can_still_change: !self.timer.is_game_starting()
+                && (self.bench_enabled || self.trades.iter().any(Trade::is_in_flight)),
             bench_champion_ids: self.bench_champions.iter().map(|b| b.champion_id).collect(),
         }
     }

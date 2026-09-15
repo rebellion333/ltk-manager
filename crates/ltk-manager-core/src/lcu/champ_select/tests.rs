@@ -76,6 +76,59 @@ fn a_champion_on_the_cell_without_a_completed_pick_is_not_a_lock() {
     assert_eq!(v.hovered_champion_id, Some(157));
 }
 
+/// Recorded from a live ARAM on 2026-09-15. The bench rotates: the champion
+/// swapped away lands on it, and the one taken leaves it.
+#[test]
+fn an_aram_bench_swap_moves_the_locked_champion() {
+    let shen = session(serde_json::json!({
+        "gameId": 1624402008,
+        "localPlayerCellId": 0,
+        "myTeam": [{"cellId": 0, "championId": 98, "championPickIntent": 0}],
+        "benchEnabled": true,
+        "benchChampions": [{"championId": 523}, {"championId": 203}],
+        "timer": {"phase": "FINALIZATION", "adjustedTimeLeftInPhase": 45000}
+    }));
+    let v = shen.view();
+    assert_eq!(v.locked_champion_id, Some(98));
+    assert_eq!(v.bench_champion_ids, vec![523, 203]);
+    assert!(v.can_still_change);
+
+    let aphelios = session(serde_json::json!({
+        "gameId": 1624402008,
+        "localPlayerCellId": 0,
+        "myTeam": [{"cellId": 0, "championId": 523, "championPickIntent": 0}],
+        "benchEnabled": true,
+        "benchChampions": [{"championId": 203}, {"championId": 98}],
+        "timer": {"phase": "FINALIZATION", "adjustedTimeLeftInPhase": 8284}
+    }));
+    let v = aphelios.view();
+    assert_eq!(
+        v.locked_champion_id,
+        Some(523),
+        "the bench swap is the lock"
+    );
+    assert_eq!(
+        v.bench_champion_ids,
+        vec![203, 98],
+        "Shen went to the bench"
+    );
+}
+
+/// The client leaves `benchEnabled` true through `GAME_STARTING`, where no
+/// swap is possible any more. Reading it straight says the champion may still
+/// change while the game is already being handed the match.
+#[test]
+fn the_bench_closes_when_the_game_starts() {
+    let s = session(serde_json::json!({
+        "localPlayerCellId": 0,
+        "myTeam": [{"cellId": 0, "championId": 523, "championPickIntent": 0}],
+        "benchEnabled": true,
+        "benchChampions": [{"championId": 203}, {"championId": 98}],
+        "timer": {"phase": "GAME_STARTING", "adjustedTimeLeftInPhase": 0}
+    }));
+    assert!(!s.view().can_still_change);
+}
+
 #[test]
 fn aram_reads_the_cell_and_keeps_the_change_open() {
     let s = session(serde_json::json!({
