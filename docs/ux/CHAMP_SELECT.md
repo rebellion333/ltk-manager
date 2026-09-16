@@ -4,6 +4,7 @@
 
 | Date       | Change                                                         |
 | ---------- | -------------------------------------------------------------- |
+| 2026-09-16 | The ARAM bench, read-only, marking what is already set up      |
 | 2026-09-16 | A champions page, so setup does not need a champion select     |
 | 2026-09-16 | Favourites per champion, beside the preferences and not inside |
 | 2026-09-16 | A preference for an uninstalled mod reads as no preference     |
@@ -48,7 +49,7 @@ knows which champion they are playing, which is after the queue rather than befo
 | Scheduler               | Available | Coalesces the picks, applies one at a time                  |
 | The panel               | Available | Raises itself on the first hover, one click to apply        |
 | Favourites per champion | Available | A star per row, and the order the panel offers them in      |
-| The bench               | Proposed  | ARAM's bench champions are carried and not drawn            |
+| The bench               | Available | Drawn and marked, read-only. Covering it is precomputation  |
 | Precomputation          | Proposed  | Build the likely archive before the pick, not after         |
 
 ## Scope
@@ -199,6 +200,29 @@ carrying has changed, decides whether it fits, and reports - so a choice made by
 panel and a choice applied automatically from a preference take the same path and cannot
 drift. A choice made with no game in sight is a preference like any other, and the next
 build picks it up.
+
+### The ARAM bench
+
+ARAM has the longest finalization of the four modes and the shortest usable budget, 9.9 s
+against draft's 31, because the bench lets the champion change until the phase ends. The
+reader is choosing between the champion they rolled and five others, under that clock, and
+which of the five they have a mod set for is part of that choice. So the panel names the
+bench and ticks the ones a preference already covers.
+
+**Read-only.** Taking a champion off the bench is an action on the account, and this app
+reads the client and never drives it. A ticked champion needs nothing anyway: it swaps
+itself the moment it comes into play. One with mods but no preference is not ticked, because
+under this clock "you could pick something" is not the same promise as "it is handled".
+
+The client keeps publishing the bench through `GAME_STARTING`, when nothing can be taken
+from it any more, so the panel draws it against `canStillChange` rather than against the
+list alone. Drawing it then would offer a choice that is over.
+
+Covering the bench - building every bench champion's mod up front, so no swap is needed at
+all - is a different feature. It is the easy case of precomputation, the one where the
+client names the candidates instead of leaving them to be guessed, and it carries costs this
+does not: a champion archive is 140 to 226 MB, and enabling mods the reader never asked for
+leaves their profile holding a set they did not choose.
 
 ### The champions page
 

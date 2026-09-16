@@ -1,3 +1,4 @@
+export * from "./ChampionBench";
 export * from "./ChampionModList";
 export * from "./ChampionModRow";
 export * from "./ChampionsBrowser";

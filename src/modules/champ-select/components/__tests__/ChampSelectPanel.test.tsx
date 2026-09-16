@@ -297,3 +297,65 @@ describe("ChampSelectPanel favourites", () => {
     ).toHaveLength(2);
   });
 });
+
+describe("ChampSelectPanel bench", () => {
+  const SONA = 37;
+  const ZIGGS = 115;
+
+  function benchView() {
+    return view({ lockedChampionId: KAYN, benchChampionIds: [SONA, ZIGGS] });
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockInvoke.mockImplementation((command: string) => {
+      if (command === "champion_roster") {
+        return Promise.resolve({
+          ok: true,
+          value: [
+            { id: KAYN, name: "Kayn", alias: "Kayn" },
+            { id: SONA, name: "Sona", alias: "Sona" },
+            { id: ZIGGS, name: "Ziggs", alias: "Ziggs" },
+          ],
+        });
+      }
+      if (command === "get_champion_preferences") {
+        return Promise.resolve({ ok: true, value: { Sona: { preferred: "mod-a" } } });
+      }
+      return Promise.resolve({ ok: true, value: answer(command) });
+    });
+    useChampSelectStore.setState({ view: null, lastReport: null, dismissedFor: null });
+    useDialogQueueStore.setState({ current: null, claims: [] });
+  });
+
+  /// ARAM's whole problem: the champion can change until the phase ends, so
+  /// which of the bench is set up is part of the choice being made.
+  it("names the bench and marks what is already set up", async () => {
+    useChampSelectStore.getState().started(benchView());
+    renderPanel();
+
+    expect(await screen.findByLabelText("Sona, mod set")).toBeVisible();
+    expect(screen.getByLabelText("Ziggs, no mod set")).toBeVisible();
+  });
+
+  /// The client keeps publishing the bench through GAME_STARTING, when nothing
+  /// can be taken from it. Drawing it then would offer a choice that is over.
+  it("hides the bench once it has closed", async () => {
+    useChampSelectStore
+      .getState()
+      .started(view({ lockedChampionId: KAYN, benchChampionIds: [SONA], canStillChange: false }));
+    renderPanel();
+
+    await screen.findByText("Shadow Kayn");
+    expect(screen.queryByText("Sona")).toBeNull();
+  });
+
+  /// Draft has no bench, and an empty one must not draw a heading over nothing.
+  it("says nothing when there is no bench", async () => {
+    useChampSelectStore.getState().started(view({ lockedChampionId: KAYN }));
+    renderPanel();
+
+    await screen.findByText("Shadow Kayn");
+    expect(screen.queryByText("On the bench")).toBeNull();
+  });
+});

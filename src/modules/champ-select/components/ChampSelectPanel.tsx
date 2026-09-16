@@ -9,6 +9,7 @@ import { useQueuedDialog } from "@/stores";
 import { champSelectQueries } from "../api";
 import { championInPlay, useChampSelectStore } from "../state/champSelect";
 import { formatSpan } from "../utils/span";
+import { ChampionBench } from "./ChampionBench";
 import { ChampionModList } from "./ChampionModList";
 import { SwapStatus } from "./SwapStatus";
 
@@ -69,7 +70,7 @@ function ChampSelectDialog({ view, championId, champion }: ChampSelectDialogProp
           </p>
         </Dialog.Body>
       )}
-      {champion && <ChampionMods champion={champion} locked={locked} />}
+      {champion && <ChampionMods champion={champion} locked={locked} view={view} />}
 
       <Dialog.Footer>
         <Button variant="ghost" onClick={dismiss}>
@@ -84,9 +85,10 @@ interface ChampionModsProps {
   champion: ChampionSummary;
   /** Whether the pick is locked, which is only shown, never acted on. */
   locked: boolean;
+  view: ChampSelectView;
 }
 
-function ChampionMods({ champion, locked }: ChampionModsProps) {
+function ChampionMods({ champion, locked, view }: ChampionModsProps) {
   const status = useQuery(champSelectQueries.status());
   const lastReport = useChampSelectStore((state) => state.lastReport);
   const patcherRunning = usePatcherRunning();
@@ -99,6 +101,8 @@ function ChampionMods({ champion, locked }: ChampionModsProps) {
       </p>
 
       <ChampionModList alias={champion.alias} name={champion.name} />
+
+      <ChampionBench championIds={view.benchChampionIds} open={view.canStillChange} />
 
       {/* The scheduler reports a refusal it can never take back, and stays quiet
           about one that a later tick could turn into a swap. An idle patcher is
