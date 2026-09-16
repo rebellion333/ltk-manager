@@ -24,6 +24,17 @@ use fs_err as fs;
 const CHUNKS: usize = 4;
 const CHUNK_BYTES: usize = 32 * 1024;
 
+/// The probe's own name, mixed into its bytes.
+///
+/// Two probes over the same champions have to differ, or the overlay builder
+/// reuses the archive it already wrote and a swap between them changes nothing
+/// the game can read. A live test on 2026-09-16 ran against two byte-identical
+/// probes and proved less than it looked like it did.
+fn seed(name: &str) -> u32 {
+    name.bytes()
+        .fold(2166136261u32, |h, b| (h ^ b as u32).wrapping_mul(16777619))
+}
+
 fn project(name: &str, champions: &[String]) -> ltk_mod_project::ModProject {
     ltk_mod_project::ModProject {
         name: name.to_string(),
@@ -56,6 +67,13 @@ fn main() {
         std::process::exit(2);
     }
 
+    /* From the file name, so a sweep can pack several probes over the same
+    champions and tell them apart in the library. */
+    let name = std::path::Path::new(&out)
+        .file_stem()
+        .and_then(|stem| stem.to_str())
+        .unwrap_or("champ-select-probe");
+
     let source = tempfile::tempdir().expect("a scratch directory");
     let root = Utf8PathBuf::from_path_buf(source.path().to_path_buf()).expect("a UTF-8 path");
 
@@ -70,7 +88,7 @@ fn main() {
         fs::create_dir_all(dir.as_std_path()).expect("the content directory");
         for i in 0..CHUNKS {
             let mut bytes = vec![0u8; CHUNK_BYTES];
-            let mut x = ((c as u32) << 16 | i as u32) | 1;
+            let mut x = seed(name) ^ ((c as u32) << 16 | i as u32) | 1;
             for b in bytes.iter_mut() {
                 x ^= x << 13;
                 x ^= x >> 17;
@@ -82,12 +100,6 @@ fn main() {
         }
     }
 
-    /* From the file name, so a sweep can pack several probes over the same
-    champions and tell them apart in the library. */
-    let name = std::path::Path::new(&out)
-        .file_stem()
-        .and_then(|stem| stem.to_str())
-        .unwrap_or("champ-select-probe");
     fs::write(
         root.join("mod.config.json").as_std_path(),
         serde_json::to_string_pretty(&project(name, &champions)).expect("the config"),
