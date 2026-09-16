@@ -53,13 +53,17 @@ function view(overrides: Partial<ChampSelectView> = {}): ChampSelectView {
 /** The backend's answers, keyed by command, for a panel that reads four of them. */
 function answer(command: string): unknown {
   if (command === "champion_roster") return [{ id: KAYN, name: "Kayn", alias: "Kayn" }];
-  if (command === "mods_for_champion") return ["mod-a"];
+  if (command === "mods_for_champion") return ["mod-a", "mod-b"];
   if (command === "get_champion_preferences") return {};
+  if (command === "get_champion_favorites") return {};
   if (command === "get_champ_select_status") {
     return { wanted: null, applied: null, rebuildMs: 553, tailMs: 3689 };
   }
   if (command === "get_installed_mods") {
-    return [{ id: "mod-a", displayName: "Shadow Kayn", authors: ["Someone"] }];
+    return [
+      { id: "mod-a", displayName: "Shadow Kayn", authors: ["Someone"] },
+      { id: "mod-b", displayName: "Rhaast Kayn", authors: ["Someone else"] },
+    ];
   }
   if (command === "get_mod_thumbnails") return {};
   if (command === "get_patcher_status") return { running: true, phase: "Running", session: null };
@@ -205,5 +209,91 @@ describe("ChampSelectPanel", () => {
     renderPanel();
 
     expect(await screen.findByText("Unrecognised champion")).toBeVisible();
+  });
+});
+
+describe("ChampSelectPanel favourites", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockInvoke.mockImplementation((command: string) =>
+      Promise.resolve({ ok: true, value: answer(command) }),
+    );
+    useChampSelectStore.setState({ view: null, lastReport: null, dismissedFor: null });
+    useDialogQueueStore.setState({ current: null, claims: [] });
+  });
+
+  /// The reader's order, not the library's. A list sorted by anything else
+  /// moves the row they were reaching for between one select and the next.
+  it("offers favourites first", async () => {
+    mockInvoke.mockImplementation((command: string) => {
+      if (command === "get_champion_favorites") {
+        return Promise.resolve({ ok: true, value: { Kayn: ["mod-b"] } });
+      }
+      return Promise.resolve({ ok: true, value: answer(command) });
+    });
+
+    useChampSelectStore.getState().started(view());
+    renderPanel();
+
+    await screen.findByText("Rhaast Kayn");
+    const labels = screen
+      .getAllByText(/Kayn$/)
+      .map((node) => node.textContent)
+      .filter((text): text is string => text !== null);
+    expect(labels.indexOf("Rhaast Kayn")).toBeLessThan(labels.indexOf("Shadow Kayn"));
+  });
+
+  it("marks a mod as a favourite", async () => {
+    useChampSelectStore.getState().started(view());
+    renderPanel();
+
+    await screen.findByText("Shadow Kayn");
+    const stars = await screen.findAllByLabelText("Keep this mod at the top for this champion");
+    await userEvent.click(stars[0]!);
+
+    const call = mockInvoke.mock.calls.find(([name]) => name === "set_champion_favorite");
+    expect(call?.[1]).toEqual({ champion: "Kayn", modId: "mod-a", favorite: true });
+  });
+
+  it("unmarks one that is already a favourite", async () => {
+    mockInvoke.mockImplementation((command: string) => {
+      if (command === "get_champion_favorites") {
+        return Promise.resolve({ ok: true, value: { Kayn: ["mod-a"] } });
+      }
+      return Promise.resolve({ ok: true, value: answer(command) });
+    });
+
+    useChampSelectStore.getState().started(view());
+    renderPanel();
+
+    const star = await screen.findByLabelText("Stop keeping this mod at the top");
+    await userEvent.click(star);
+
+    const call = mockInvoke.mock.calls.find(([name]) => name === "set_champion_favorite");
+    expect(call?.[1]).toEqual({ champion: "Kayn", modId: "mod-a", favorite: false });
+  });
+
+  /// Marking a favourite must never write a preference: that is what would
+  /// switch off the mods the reader has for the champion.
+  it("does not touch what the champion applies", async () => {
+    useChampSelectStore.getState().started(view());
+    renderPanel();
+
+    await screen.findByText("Shadow Kayn");
+    const stars = await screen.findAllByLabelText("Keep this mod at the top for this champion");
+    await userEvent.click(stars[0]!);
+
+    expect(calls("set_champion_preference")).toHaveLength(0);
+  });
+
+  /// The row that applies no mod is not a mod, so there is nothing to keep.
+  it("offers no star on the no-mod row", async () => {
+    useChampSelectStore.getState().started(view());
+    renderPanel();
+
+    await screen.findByText("No mod");
+    expect(
+      await screen.findAllByLabelText("Keep this mod at the top for this champion"),
+    ).toHaveLength(2);
   });
 });

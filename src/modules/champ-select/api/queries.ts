@@ -30,6 +30,16 @@ export const champSelectQueries = {
       staleTime: Infinity,
     }),
 
+  /* The mods the reader keeps within reach, per champion, in their order. A
+     favourite is where a mod sits in a list and never what a champion applies,
+     so this is read beside the preferences and never instead of them. */
+  favorites: () =>
+    queryOptions<Record<string, string[]>, AppError>({
+      queryKey: champSelectKeys.favorites(),
+      queryFn: queryFn(api.champSelect.favorites),
+      staleTime: Infinity,
+    }),
+
   /* Champion select speaks in numeric ids, and everything else here speaks in
      aliases. This is the join, and it only changes when a patch adds a
      champion, so it is read once and held.

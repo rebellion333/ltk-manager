@@ -347,6 +347,16 @@ export const commands = {
 	championRoster: () => __TAURI_INVOKE<({ ok: true; value: ChampionSummary[] }) & { error?: never } | ({ ok: false; error: AppErrorResponse }) & { value?: never }>("champion_roster"),
 	/**  What the active profile wants for each champion. */
 	getChampionPreferences: () => __TAURI_INVOKE<({ ok: true; value: { [key in string]: ChampionPreference_Serialize } }) & { error?: never } | ({ ok: false; error: AppErrorResponse }) & { value?: never }>("get_champion_preferences"),
+	/**  The mods the active profile keeps within reach, per champion. */
+	getChampionFavorites: () => __TAURI_INVOKE<({ ok: true; value: { [key in string]: string[] } }) & { error?: never } | ({ ok: false; error: AppErrorResponse }) & { value?: never }>("get_champion_favorites"),
+	/**
+	 *  Mark a mod as one of a champion's favourites, or unmark it.
+	 * 
+	 *  Not a preference: nothing about the enabled set moves, no rebuild follows,
+	 *  and the scheduler is not told. This only changes where a mod sits in the
+	 *  list champion select offers.
+	 */
+	setChampionFavorite: (champion: string, modId: string, favorite: boolean) => __TAURI_INVOKE<({ ok: true; value: null }) & { error?: never } | ({ ok: false; error: AppErrorResponse }) & { value?: never }>("set_champion_favorite", { champion, modId, favorite }),
 	/**  Every installed mod that applies to a champion, by the champion's alias. */
 	modsForChampion: (champion: string) => __TAURI_INVOKE<({ ok: true; value: string[] }) & { error?: never } | ({ ok: false; error: AppErrorResponse }) & { value?: never }>("mods_for_champion", { champion }),
 	/**
@@ -780,10 +790,26 @@ export type ChampSelectView = {
 	benchChampionIds: number[],
 };
 
-/**  What one champion's mods should do, as the reader set them. */
+/**
+ *  What the reader settled for one champion.
+ * 
+ *  **An entry existing is the decision.** A champion with no entry is one the
+ *  reader never spoke about, and champion select leaves it alone; a champion
+ *  with an entry is one they settled, and champion select acts on it every
+ *  game. Nothing that is not a decision belongs in here - see
+ *  [`Profile::champion_favorites`] for the other half.
+ */
 export type ChampionPreference = ChampionPreference_Serialize | ChampionPreference_Deserialize;
 
-/**  What one champion's mods should do, as the reader set them. */
+/**
+ *  What the reader settled for one champion.
+ * 
+ *  **An entry existing is the decision.** A champion with no entry is one the
+ *  reader never spoke about, and champion select leaves it alone; a champion
+ *  with an entry is one they settled, and champion select acts on it every
+ *  game. Nothing that is not a decision belongs in here - see
+ *  [`Profile::champion_favorites`] for the other half.
+ */
 export type ChampionPreference_Deserialize = {
 	/**
 	 *  The mod applied when this champion is picked, if any.
@@ -792,16 +818,17 @@ export type ChampionPreference_Deserialize = {
 	 *  having one that is currently disabled.
 	 */
 	preferred?: string | null,
-	/**
-	 *  Mods the reader keeps within reach for this champion, in their order.
-	 * 
-	 *  Champion select offers these first. A mod being here says nothing about
-	 *  whether it is enabled.
-	 */
-	favorites?: string[],
 };
 
-/**  What one champion's mods should do, as the reader set them. */
+/**
+ *  What the reader settled for one champion.
+ * 
+ *  **An entry existing is the decision.** A champion with no entry is one the
+ *  reader never spoke about, and champion select leaves it alone; a champion
+ *  with an entry is one they settled, and champion select acts on it every
+ *  game. Nothing that is not a decision belongs in here - see
+ *  [`Profile::champion_favorites`] for the other half.
+ */
 export type ChampionPreference_Serialize = {
 	/**
 	 *  The mod applied when this champion is picked, if any.
@@ -810,13 +837,6 @@ export type ChampionPreference_Serialize = {
 	 *  having one that is currently disabled.
 	 */
 	preferred?: string | null,
-	/**
-	 *  Mods the reader keeps within reach for this champion, in their order.
-	 * 
-	 *  Champion select offers these first. A mod being here says nothing about
-	 *  whether it is enabled.
-	 */
-	favorites: string[],
 };
 
 /**  One champion as the client lists it. */

@@ -3,6 +3,8 @@
   "champ_select_budget_hint": "A swap costs about {rebuild} here, and there are about {tail} left after champion select closes.",
   "champ_select_close_action": "Close",
   "champ_select_description": "The mod this champion applies, swapped before the game loads",
+  "champ_select_favorite_action": "Keep this mod at the top for this champion",
+  "champ_select_unfavorite_action": "Stop keeping this mod at the top",
   "champ_select_empty_description": "Mods that apply to this champion show up here",
   "champ_select_empty_title": "No mods for {champion}",
   "champ_select_hovering_label": "Hovering",

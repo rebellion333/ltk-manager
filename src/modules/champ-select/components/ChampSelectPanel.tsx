@@ -7,8 +7,9 @@ import { ModThumbnails, useInstalledMods, useModThumbnail } from "@/modules/libr
 import { usePatcherRunning } from "@/modules/patcher";
 import { useQueuedDialog } from "@/stores";
 
-import { champSelectQueries, useSetChampionPreference } from "../api";
+import { champSelectQueries, useSetChampionFavorite, useSetChampionPreference } from "../api";
 import { championInPlay, useChampSelectStore } from "../state/champSelect";
+import { offerOrder } from "../utils/order";
 import { formatSpan } from "../utils/span";
 import { ChampionModRow } from "./ChampionModRow";
 import { SwapStatus } from "./SwapStatus";
@@ -91,9 +92,11 @@ function ChampionMods({ champion, locked }: ChampionModsProps) {
   const toast = useToast();
   const mods = useQuery(champSelectQueries.modsFor(champion.alias));
   const preferences = useQuery(champSelectQueries.preferences());
+  const favorites = useQuery(champSelectQueries.favorites());
   const status = useQuery(champSelectQueries.status());
   const installed = useInstalledMods();
   const setPreference = useSetChampionPreference();
+  const setFavorite = useSetChampionFavorite();
   const lastReport = useChampSelectStore((state) => state.lastReport);
   const patcherRunning = usePatcherRunning();
 
@@ -103,7 +106,8 @@ function ChampionMods({ champion, locked }: ChampionModsProps) {
   const preference = preferences.data?.[champion.alias];
   const preferred = preference?.preferred ?? null;
   const chosen = preference !== undefined;
-  const modIds = mods.data ?? [];
+  const marked = favorites.data?.[champion.alias] ?? [];
+  const modIds = offerOrder(mods.data ?? [], marked);
 
   const byId = new Map((installed.data ?? []).map((mod: InstalledMod) => [mod.id, mod]));
 
@@ -151,6 +155,14 @@ function ChampionMods({ champion, locked }: ChampionModsProps) {
                 selected={preferred === modId}
                 disabled={setPreference.isPending}
                 onSelect={() => choose(modId)}
+                favorite={marked.includes(modId)}
+                onToggleFavorite={() =>
+                  setFavorite.mutate({
+                    champion: champion.alias,
+                    modId,
+                    favorite: !marked.includes(modId),
+                  })
+                }
               />
             ))}
           </div>
@@ -187,13 +199,25 @@ interface ModChoiceProps {
   selected: boolean;
   disabled: boolean;
   onSelect: () => void;
+  favorite: boolean;
+  onToggleFavorite: () => void;
 }
 
-function ModChoice({ modId, mod, selected, disabled, onSelect }: ModChoiceProps) {
+function ModChoice({
+  modId,
+  mod,
+  selected,
+  disabled,
+  onSelect,
+  favorite,
+  onToggleFavorite,
+}: ModChoiceProps) {
   const thumbnail = useModThumbnail(modId);
 
   return (
     <ChampionModRow
+      favorite={favorite}
+      onToggleFavorite={onToggleFavorite}
       label={mod?.displayName ?? modId}
       detail={mod?.authors.join(", ") ?? ""}
       thumbnailUrl={thumbnail.data}

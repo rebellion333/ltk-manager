@@ -78,13 +78,32 @@ pub struct Profile {
     /// ADR-0041.
     #[serde(default)]
     pub champion_preferences: HashMap<String, ChampionPreference>,
+    /// The mods the reader keeps within reach for each champion, in the order
+    /// champion select offers them, keyed by the champion's alias.
+    ///
+    /// Beside [`champion_preferences`](Self::champion_preferences) rather than
+    /// inside it, because the two answer different questions and only one of
+    /// them is a decision. An entry in the preferences means the reader settled
+    /// what the champion applies, and champion select acts on that; a favourite
+    /// says only where a mod sits in a list. Held together, marking a favourite
+    /// would write a preference, and a preference with no mod in it is the
+    /// reader having chosen *no* mod - so ordering a list would switch mods
+    /// off. Apart, neither can be mistaken for the other.
+    #[serde(default)]
+    pub champion_favorites: HashMap<String, Vec<String>>,
     /// Creation timestamp
     pub created_at: DateTime<Utc>,
     /// Last time this profile was used/switched to
     pub last_used: DateTime<Utc>,
 }
 
-/// What one champion's mods should do, as the reader set them.
+/// What the reader settled for one champion.
+///
+/// **An entry existing is the decision.** A champion with no entry is one the
+/// reader never spoke about, and champion select leaves it alone; a champion
+/// with an entry is one they settled, and champion select acts on it every
+/// game. Nothing that is not a decision belongs in here - see
+/// [`Profile::champion_favorites`] for the other half.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[cfg_attr(feature = "ts", derive(ts_rs::TS, specta::Type))]
 #[cfg_attr(feature = "ts", ts(export))]
@@ -97,11 +116,6 @@ pub struct ChampionPreference {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[cfg_attr(feature = "ts", ts(optional = nullable))]
     pub preferred: Option<String>,
-    /// Mods the reader keeps within reach for this champion, in their order.
-    ///
-    /// Champion select offers these first. A mod being here says nothing about
-    /// whether it is enabled.
-    pub favorites: Vec<String>,
 }
 
 /// A mod layer shown in the UI.
@@ -315,6 +329,7 @@ mod tests {
                 mod_order: Vec::new(),
                 layer_states: HashMap::new(),
                 champion_preferences: HashMap::new(),
+                champion_favorites: Default::default(),
                 created_at: Utc::now(),
                 last_used: Utc::now(),
             }],
@@ -343,6 +358,7 @@ mod tests {
                 mod_order: Vec::new(),
                 layer_states: HashMap::new(),
                 champion_preferences: HashMap::new(),
+                champion_favorites: Default::default(),
                 created_at: Utc::now(),
                 last_used: Utc::now(),
             }],
@@ -371,6 +387,7 @@ mod tests {
                 mod_order: Vec::new(),
                 layer_states: HashMap::new(),
                 champion_preferences: HashMap::new(),
+                champion_favorites: Default::default(),
                 created_at: Utc::now(),
                 last_used: Utc::now(),
             }],
@@ -408,6 +425,7 @@ mod tests {
             mod_order: Vec::new(),
             layer_states: HashMap::new(),
             champion_preferences: HashMap::new(),
+            champion_favorites: Default::default(),
             created_at: Utc::now(),
             last_used: Utc::now(),
         });

@@ -43,7 +43,6 @@ fn preferences(pairs: &[(&str, &str)]) -> HashMap<String, ChampionPreference> {
                 (*alias).to_string(),
                 ChampionPreference {
                     preferred: Some((*mod_id).to_string()),
-                    favorites: Vec::new(),
                 },
             )
         })

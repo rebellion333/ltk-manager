@@ -47,6 +47,7 @@ impl ModLibrary {
                 mod_order,
                 layer_states: HashMap::new(),
                 champion_preferences: HashMap::new(),
+                champion_favorites: HashMap::new(),
                 created_at: Utc::now(),
                 last_used: Utc::now(),
             };

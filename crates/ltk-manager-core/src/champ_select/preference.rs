@@ -72,9 +72,9 @@ impl ModLibrary {
     /// `library.json` that nothing reads. A read that quietly rewrites the
     /// library is a worse trade than that.
     ///
-    /// Favourites go with the entry, which is free today because nothing reads
-    /// them. When something does, the shape needs a third state - an entry that
-    /// carries favourites and no decision - and this is where that shows up.
+    /// Favourites are pruned separately, in
+    /// [`champion_favorites`](Self::champion_favorites), and losing a
+    /// preference never costs the reader the list they built.
     pub fn champion_preferences(
         &self,
         config: &Config,
@@ -102,6 +102,110 @@ impl ModLibrary {
                     .any(|m| m.id == wanted_mod && applies_to(m, &reports, &wanted_champion))
             })
             .collect())
+    }
+
+    /// The mods the reader keeps within reach, per champion, in their order.
+    ///
+    /// Pruned like the preferences are, and for the same reason: a favourite
+    /// naming an uninstalled mod would draw a row for something the library
+    /// does not hold. A champion whose favourites all go is dropped rather than
+    /// left with an empty list, so the map holds only what it can offer.
+    pub fn champion_favorites(
+        &self,
+        config: &Config,
+    ) -> AppResult<std::collections::HashMap<String, Vec<String>>> {
+        let recorded = self.with_index(config, |_storage, index| {
+            let active = index.active_profile_id.clone();
+            Ok(index
+                .profiles
+                .iter()
+                .find(|profile| profile.id == active)
+                .map(|profile| profile.champion_favorites.clone())
+                .unwrap_or_default())
+        })?;
+        if recorded.is_empty() {
+            return Ok(recorded);
+        }
+
+        let installed = self.get_installed_mods(config)?;
+        let reports = self.wad_reports().0.lock().get_all();
+
+        Ok(recorded
+            .into_iter()
+            .filter_map(|(alias, favorites)| {
+                let wanted = norm_key(&champion_display_name(&alias));
+                let kept: Vec<String> = favorites
+                    .into_iter()
+                    .filter(|id| {
+                        installed
+                            .iter()
+                            .any(|m| &m.id == id && applies_to(m, &reports, &wanted))
+                    })
+                    .collect();
+                (!kept.is_empty()).then_some((alias, kept))
+            })
+            .collect())
+    }
+
+    /// Put `mod_id` among `alias`'s favourites, or take it out.
+    ///
+    /// Appended rather than inserted, so the order is the one the reader built
+    /// by marking them. Nothing about the enabled set moves and no rebuild
+    /// follows: this is where a mod sits in a list, not what the champion
+    /// applies.
+    ///
+    /// # Errors
+    ///
+    /// [`AppError::ModNotFound`] when `mod_id` is not a mod for `alias`. A
+    /// favourite that cannot be offered is one the reader would never see
+    /// again, and failing here says so while they are still looking.
+    pub fn set_champion_favorite(
+        &self,
+        config: &Config,
+        alias: &str,
+        mod_id: &str,
+        favorite: bool,
+    ) -> AppResult<()> {
+        if favorite
+            && !self
+                .mods_for_champion(config, alias)?
+                .iter()
+                .any(|id| id == mod_id)
+        {
+            return Err(AppError::ModNotFound(format!(
+                "{mod_id} is not a mod for {alias}"
+            )));
+        }
+
+        self.mutate_index(config, |_storage, index| {
+            let active = index.active_profile_id.clone();
+            let profile = index
+                .profiles
+                .iter_mut()
+                .find(|profile| profile.id == active)
+                .ok_or_else(|| AppError::Other("Active profile not found".to_string()))?;
+
+            if !favorite {
+                /* The champion's entry goes with its last favourite, so an
+                empty list is never a thing the map holds. */
+                if let Some(favorites) = profile.champion_favorites.get_mut(alias) {
+                    favorites.retain(|id| id != mod_id);
+                    if favorites.is_empty() {
+                        profile.champion_favorites.remove(alias);
+                    }
+                }
+                return Ok(());
+            }
+
+            let favorites = profile
+                .champion_favorites
+                .entry(alias.to_string())
+                .or_default();
+            if !favorites.iter().any(|id| id == mod_id) {
+                favorites.push(mod_id.to_string());
+            }
+            Ok(())
+        })
     }
 
     /// The preferences as the profile holds them, dangling ones and all.

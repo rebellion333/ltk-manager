@@ -335,6 +335,38 @@ pub fn get_champion_preferences(
     library.0.champion_preferences(&config).into()
 }
 
+/// The mods the active profile keeps within reach, per champion.
+#[tauri::command]
+#[specta::specta]
+pub fn get_champion_favorites(
+    library: State<ModLibraryState>,
+    settings: State<SettingsState>,
+) -> IpcResult<std::collections::HashMap<String, Vec<String>>> {
+    let config = settings.config();
+    library.0.champion_favorites(&config).into()
+}
+
+/// Mark a mod as one of a champion's favourites, or unmark it.
+///
+/// Not a preference: nothing about the enabled set moves, no rebuild follows,
+/// and the scheduler is not told. This only changes where a mod sits in the
+/// list champion select offers.
+#[tauri::command]
+#[specta::specta]
+pub async fn set_champion_favorite(
+    champion: String,
+    mod_id: String,
+    favorite: bool,
+    app_handle: AppHandle,
+) -> IpcResult<()> {
+    super::off_thread(move || {
+        let config = app_handle.state::<SettingsState>().config();
+        let library = app_handle.state::<ModLibraryState>().0.clone();
+        library.set_champion_favorite(&config, &champion, &mod_id, favorite)
+    })
+    .await
+}
+
 /// Choose the mod a champion applies, and rebuild the overlay for it.
 ///
 /// The scheduler does this on its own for the champion in play. This is the

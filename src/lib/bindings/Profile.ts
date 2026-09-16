@@ -42,6 +42,20 @@ layerStates: { [key in string]: { [key in string]: boolean } },
  */
 championPreferences: { [key in string]: ChampionPreference }, 
 /**
+ * The mods the reader keeps within reach for each champion, in the order
+ * champion select offers them, keyed by the champion's alias.
+ *
+ * Beside [`champion_preferences`](Self::champion_preferences) rather than
+ * inside it, because the two answer different questions and only one of
+ * them is a decision. An entry in the preferences means the reader settled
+ * what the champion applies, and champion select acts on that; a favourite
+ * says only where a mod sits in a list. Held together, marking a favourite
+ * would write a preference, and a preference with no mod in it is the
+ * reader having chosen *no* mod - so ordering a list would switch mods
+ * off. Apart, neither can be mistaken for the other.
+ */
+championFavorites: { [key in string]: Array<string> }, 
+/**
  * Creation timestamp
  */
 createdAt: string, 

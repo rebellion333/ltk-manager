@@ -577,6 +577,9 @@ export const api = {
     status: () => commands.getChampSelectStatus().then(toResult),
     roster: () => commands.championRoster().then(toResult),
     preferences: () => commands.getChampionPreferences().then(toResult),
+    favorites: () => commands.getChampionFavorites().then(toResult),
+    setFavorite: (champion: string, modId: string, favorite: boolean) =>
+      commands.setChampionFavorite(champion, modId, favorite).then(toResult),
     modsForChampion: (champion: string) => commands.modsForChampion(champion).then(toResult),
     setPreference: (champion: string, modId: string | null) =>
       commands.setChampionPreference(champion, modId).then(toResult),

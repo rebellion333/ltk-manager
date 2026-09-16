@@ -101,6 +101,8 @@ migrated![
     get_champ_select_status,
     champion_roster,
     get_champion_preferences,
+    get_champion_favorites,
+    set_champion_favorite,
     mods_for_champion,
     set_champion_preference,
 ];

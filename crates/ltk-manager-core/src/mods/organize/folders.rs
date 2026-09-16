@@ -448,6 +448,7 @@ mod tests {
             mod_order: mod_order.into_iter().map(String::from).collect(),
             layer_states: HashMap::new(),
             champion_preferences: HashMap::new(),
+            champion_favorites: Default::default(),
             created_at: Utc::now(),
             last_used: Utc::now(),
         }

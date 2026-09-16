@@ -4,6 +4,7 @@
 
 | Date       | Change                                                         |
 | ---------- | -------------------------------------------------------------- |
+| 2026-09-16 | Favourites per champion, beside the preferences and not inside |
 | 2026-09-16 | A preference for an uninstalled mod reads as no preference     |
 | 2026-09-16 | First draft: the panel, the scheduler, and the measured budget |
 
@@ -45,7 +46,7 @@ knows which champion they are playing, which is after the queue rather than befo
 | Whole-archive rebuild   | Available | The swap path never takes the in-place tail write           |
 | Scheduler               | Available | Coalesces the picks, applies one at a time                  |
 | The panel               | Available | Raises itself on the first hover, one click to apply        |
-| Favourites per champion | Proposed  | `ChampionPreference.favorites` exists and nothing reads it  |
+| Favourites per champion | Available | A star per row, and the order the panel offers them in      |
 | The bench               | Proposed  | ARAM's bench champions are carried and not drawn            |
 | Precomputation          | Proposed  | Build the likely archive before the pick, not after         |
 
@@ -196,6 +197,21 @@ carrying has changed, decides whether it fits, and reports - so a choice made by
 panel and a choice applied automatically from a preference take the same path and cannot
 drift. A choice made with no game in sight is a preference like any other, and the next
 build picks it up.
+
+### Favourites are not choices
+
+A star keeps a mod at the top of that champion's list, in the order the reader marked them.
+It moves nothing else: no mod is enabled or disabled, no overlay is rebuilt, and the
+scheduler is not told. The write is optimistic for exactly that reason - being wrong for one
+frame costs a star drawn filled that empties again, where being wrong about what the
+champion applies costs a game played with the wrong mod.
+
+They live in their own map on the profile rather than inside `ChampionPreference`, and the
+reason is worth stating because the shape invited the opposite. **An entry in the
+preferences is a decision**, and champion select acts on one every game; an entry with no
+mod in it is the reader having chosen _no_ mod, which switches off what they have. Held
+together, marking a favourite would write a preference, so ordering a list would turn mods
+off. Apart, neither can be mistaken for the other.
 
 **A choice outlives the mod it named, and that is not a failure.** Uninstalling leaves the
 preference pointing at an id the library no longer holds, and a reinstall issues a new one,

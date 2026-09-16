@@ -304,3 +304,128 @@ fn a_preference_for_a_mod_that_no_longer_fits_the_champion_is_not_returned() {
     let preferences = library.champion_preferences(&config).unwrap();
     assert!(!preferences.contains_key("Garen"));
 }
+
+/// Marking a favourite must not write a preference. If it did, ordering a list
+/// would read as "this champion applies no mod" and switch off what the reader
+/// had, which is the reason the two live apart on the profile.
+#[test]
+fn a_favorite_is_not_a_decision() {
+    let dir = tempfile::tempdir().unwrap();
+    let (library, config) = library_with(dir.path(), &[("garen-a", &["Garen"])]);
+    library
+        .mutate_index(&config, |_storage, index| {
+            index.profiles[0].enabled_mods = vec!["garen-a".to_string()];
+            Ok(())
+        })
+        .unwrap();
+
+    library
+        .set_champion_favorite(&config, "Garen", "garen-a", true)
+        .unwrap();
+
+    assert!(
+        !library
+            .champion_preferences(&config)
+            .unwrap()
+            .contains_key("Garen"),
+        "no decision was made, so champion select has nothing to act on"
+    );
+    assert_eq!(
+        enabled(&library, &config),
+        vec!["garen-a"],
+        "and nothing was switched off"
+    );
+}
+
+#[test]
+fn favorites_keep_the_order_they_were_marked_in() {
+    let dir = tempfile::tempdir().unwrap();
+    let (library, config) = library_with(
+        dir.path(),
+        &[
+            ("garen-a", &["Garen"]),
+            ("garen-b", &["Garen"]),
+            ("garen-c", &["Garen"]),
+        ],
+    );
+
+    for id in ["garen-c", "garen-a"] {
+        library
+            .set_champion_favorite(&config, "Garen", id, true)
+            .unwrap();
+    }
+
+    assert_eq!(
+        library.champion_favorites(&config).unwrap()["Garen"],
+        vec!["garen-c".to_string(), "garen-a".to_string()],
+        "library order is not the reader's order"
+    );
+}
+
+/// Unmarking the last one takes the champion with it, so an empty list is never
+/// a thing the map holds and callers have one shape to read.
+#[test]
+fn unmarking_the_last_favorite_drops_the_champion() {
+    let dir = tempfile::tempdir().unwrap();
+    let (library, config) = library_with(dir.path(), &[("garen-a", &["Garen"])]);
+    library
+        .set_champion_favorite(&config, "Garen", "garen-a", true)
+        .unwrap();
+
+    library
+        .set_champion_favorite(&config, "Garen", "garen-a", false)
+        .unwrap();
+
+    assert!(
+        !library
+            .champion_favorites(&config)
+            .unwrap()
+            .contains_key("Garen")
+    );
+}
+
+/// The same pruning the preferences get: a favourite naming a mod the library
+/// no longer holds would draw a row for nothing.
+#[test]
+fn a_favorite_for_an_uninstalled_mod_is_not_returned() {
+    let dir = tempfile::tempdir().unwrap();
+    let (library, config) = library_with(
+        dir.path(),
+        &[("garen-a", &["Garen"]), ("garen-b", &["Garen"])],
+    );
+    for id in ["garen-a", "garen-b"] {
+        library
+            .set_champion_favorite(&config, "Garen", id, true)
+            .unwrap();
+    }
+
+    library
+        .mutate_index(&config, |_storage, index| {
+            index.mods.retain(|entry| entry.id != "garen-a");
+            Ok(())
+        })
+        .unwrap();
+
+    assert_eq!(
+        library.champion_favorites(&config).unwrap()["Garen"],
+        vec!["garen-b".to_string()]
+    );
+}
+
+/// A mod that cannot be offered for the champion is one the reader would never
+/// see again, so it is refused while they are still looking.
+#[test]
+fn a_favorite_for_another_champions_mod_is_refused() {
+    let dir = tempfile::tempdir().unwrap();
+    let (library, config) = library_with(
+        dir.path(),
+        &[("garen-a", &["Garen"]), ("teemo-a", &["Teemo"])],
+    );
+
+    let error = library
+        .set_champion_favorite(&config, "Garen", "teemo-a", true)
+        .unwrap_err();
+
+    assert!(matches!(error, AppError::ModNotFound(_)));
+    assert!(library.champion_favorites(&config).unwrap().is_empty());
+}
