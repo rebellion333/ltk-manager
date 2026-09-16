@@ -72,7 +72,7 @@ describe("ChampSelectPanel", () => {
     mockInvoke.mockImplementation((command: string) =>
       Promise.resolve({ ok: true, value: answer(command) }),
     );
-    useChampSelectStore.setState({ view: null, lastReport: null, dismissed: false });
+    useChampSelectStore.setState({ view: null, lastReport: null, dismissedFor: null });
     useDialogQueueStore.setState({ current: null, claims: [] });
   });
 
@@ -117,7 +117,7 @@ describe("ChampSelectPanel", () => {
     expect(call?.[1]).toEqual({ champion: "Kayn", modId: null });
   });
 
-  /// Closing is about this select. The next one raises the panel again.
+  /// Closing is about this pick. The next one raises the panel again.
   it("stays closed once dismissed", async () => {
     useChampSelectStore.getState().started(view());
     renderPanel();
@@ -125,6 +125,20 @@ describe("ChampSelectPanel", () => {
     await userEvent.click(await screen.findByText("Close"));
 
     expect(screen.queryByText("Shadow Kayn")).toBeNull();
+  });
+
+  /// The backend raises the window once per champion, so a dismissal that
+  /// outlived the champion leaves the window arriving over a panel that will
+  /// not open. The two have to agree on what a pick is.
+  it("opens again on the champion the reader came back to", async () => {
+    useChampSelectStore.getState().started(view());
+    renderPanel();
+
+    await userEvent.click(await screen.findByText("Close"));
+    useChampSelectStore.getState().changed(view({ hoveredChampionId: 99 }));
+    useChampSelectStore.getState().changed(view());
+
+    expect(await screen.findByText("Shadow Kayn")).toBeVisible();
   });
 
   /// A refusal is the case the panel exists to report honestly.

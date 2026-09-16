@@ -7,8 +7,8 @@ interface ChampSelectStore {
   view: ChampSelectView | null;
   /** What the scheduler last said about a swap, until the next one. */
   lastReport: SwapReport | null;
-  /** Whether the reader has closed the panel for this champion select. */
-  dismissed: boolean;
+  /** The champion the reader closed the panel on, while it is still in play. */
+  dismissedFor: number | null;
   started: (view: ChampSelectView) => void;
   changed: (view: ChampSelectView) => void;
   ended: () => void;
@@ -29,20 +29,29 @@ interface ChampSelectStore {
 export const useChampSelectStore = create<ChampSelectStore>()((set) => ({
   view: null,
   lastReport: null,
-  dismissed: false,
+  dismissedFor: null,
 
-  started: (view) => set({ view, lastReport: null, dismissed: false }),
-  changed: (view) => set({ view }),
+  started: (view) => set({ view, lastReport: null, dismissedFor: null }),
+
+  /* A dismissal lasts while the pick it was about does. The backend raises the
+     window once per champion, so a dismissal that outlived the champion would
+     leave the window coming forward over a panel that refuses to open - which
+     is what a reader sees as the app taking the screen for nothing. */
+  changed: (view) =>
+    set((state) => ({
+      view,
+      dismissedFor: championInPlay(view) === state.dismissedFor ? state.dismissedFor : null,
+    })),
 
   // The report goes with the select it was about. Carrying it into the next one
   // would explain a swap the reader is no longer in.
-  ended: () => set({ view: null, lastReport: null, dismissed: false }),
+  ended: () => set({ view: null, lastReport: null, dismissedFor: null }),
 
   reported: (report) => set({ lastReport: report }),
 
-  /* Closing the panel is about this select, not about the feature: the next one
-     raises it again, and the scheduler keeps swapping either way. */
-  dismiss: () => set({ dismissed: true }),
+  /* Closing the panel is about this pick, not about the feature: another
+     champion raises it again, and the scheduler keeps swapping either way. */
+  dismiss: () => set((state) => ({ dismissedFor: championInPlay(state.view) })),
 }));
 
 /** The champion the swap is about: the lock, or the hover before it. */

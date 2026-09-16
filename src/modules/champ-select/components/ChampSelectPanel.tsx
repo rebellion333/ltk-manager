@@ -25,8 +25,9 @@ import { SwapStatus } from "./SwapStatus";
  */
 export function ChampSelectPanel() {
   const view = useChampSelectStore((state) => state.view);
-  const dismissed = useChampSelectStore((state) => state.dismissed);
+  const dismissedFor = useChampSelectStore((state) => state.dismissedFor);
   const championId = championInPlay(view);
+  const dismissed = championId !== null && championId === dismissedFor;
   const roster = useQuery(champSelectQueries.roster(championId !== null));
   const champion = roster.data?.find((entry) => entry.id === championId);
 
