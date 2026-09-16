@@ -76,6 +76,23 @@ struct SchedulerObserver {
 
 impl LcuObserver for SchedulerObserver {
     fn on_event(&self, event: LcuEvent) {
+        /* The one timestamp that says when the client told us, so a panel that
+        feels slow can be read against it rather than guessed at. */
+        match &event {
+            LcuEvent::ChampSelectStarted(view) => tracing::debug!(
+                locked = ?view.locked_champion_id,
+                hovered = ?view.hovered_champion_id,
+                "Champion select started"
+            ),
+            LcuEvent::ChampSelectChanged(view) => tracing::debug!(
+                locked = ?view.locked_champion_id,
+                hovered = ?view.hovered_champion_id,
+                "Champion select changed"
+            ),
+            LcuEvent::ChampSelectEnded => tracing::debug!("Champion select ended"),
+            _ => {}
+        }
+
         if let Some(champ_select) = self.app.try_state::<crate::commands::ChampSelectState>() {
             champ_select.observe(&self.app, &event);
         }

@@ -282,6 +282,11 @@ pub async fn set_champion_preference(
     app_handle: AppHandle,
 ) -> IpcResult<()> {
     super::off_thread(move || {
+        /* Both ends, because the panel spinner is this call and a spinner that
+        outlives it is a different fault from one that does not. */
+        let started = std::time::Instant::now();
+        tracing::debug!(%champion, ?mod_id, "Champion preference requested");
+
         let config = app_handle.state::<SettingsState>().config();
         let library = app_handle.state::<ModLibraryState>().0.clone();
         library.apply_champion_preference(&config, &champion, mod_id.as_deref())?;
@@ -294,6 +299,11 @@ pub async fn set_champion_preference(
             champ_select.scheduler.lock().set_preferences(preferences);
         }
         champ_select.poke();
+
+        tracing::debug!(
+            took_ms = started.elapsed().as_millis() as u64,
+            "Champion preference recorded"
+        );
         Ok(())
     })
     .await
