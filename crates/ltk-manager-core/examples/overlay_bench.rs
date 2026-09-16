@@ -183,12 +183,19 @@ fn sweep(game: &Utf8Path, limit: usize) {
     let scratch = utf8(scratch.path());
     let mut rows: Vec<(String, f64, f64)> = Vec::new();
 
+    // One state directory for the whole sweep, which is what a real profile
+    // has. A directory per champion would rebuild `game_index.bin` every
+    // round - 392 archives mounted for their tables - and that index is
+    // already on disk when a swap happens, so timing it would be timing the
+    // wrong thing. The first champion below pays for it once and says so.
+    let overlay_root = scratch.join("overlay");
+    let state = scratch.join("state");
+
     for (round, (wad_name, size)) in wads.iter().take(limit).enumerate() {
-        // A directory of its own per champion, so no state carries over and
-        // every build is the first one for that archive.
+        // The mod is fresh per champion so each round adds exactly one archive
+        // to the overlay, which is the shape of a swap: everything else in the
+        // profile is already built and gets skipped.
         let mod_dir = scratch.join(format!("mod{round}"));
-        let overlay_root = scratch.join(format!("overlay{round}"));
-        let state = scratch.join(format!("state{round}"));
         std::fs::create_dir_all(mod_dir.as_std_path()).unwrap();
         write_mod(&mod_dir, wad_name, round as u8 + 1);
 
