@@ -128,19 +128,22 @@ impl Swapper for ShellSwapper {
         }
     }
 
+    /* The rebuild is unconditional, and the profile not moving is not a reason
+    to skip it. `PreferenceChange::changed` describes the profile; what has to
+    be true here is about the overlay, and the two come apart the moment
+    anything else writes the preference first - which `set_champion_preference`
+    does on every click of the panel. Trusting the profile there left an overlay
+    with nothing in it while the scheduler reported the mod applied, caught in a
+    live Practice Tool on 2026-09-16. The scheduler only asks when its own
+    record of the overlay differs from what is wanted, so an ask is always a
+    rebuild worth doing. */
     fn apply(&self, desired: &Desired) -> ltk_manager_core::error::AppResult<Duration> {
         let config = self.app.state::<SettingsState>().config();
-        let change = self.library.apply_champion_preference(
+        self.library.apply_champion_preference(
             &config,
             &desired.alias,
             desired.mod_id.as_deref(),
         )?;
-
-        // Nothing moved, so there is nothing to build. The scheduler still
-        // records this as applied, which is what stops it asking again.
-        if !change.changed {
-            return Ok(Duration::ZERO);
-        }
 
         let outcome = self.library.rebuild_for_swap(&config)?;
         Ok(outcome.rebuilt_in)

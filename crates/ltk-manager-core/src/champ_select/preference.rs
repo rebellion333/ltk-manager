@@ -21,8 +21,14 @@ pub struct PreferenceChange {
     pub disabled: Vec<String>,
     /// The mod switched on, if one was.
     pub enabled: Option<String>,
-    /// Whether anything actually moved. A swap to what is already applied
-    /// changes nothing and is worth not rebuilding for.
+    /// Whether anything actually moved in the profile.
+    ///
+    /// **Not a reason to skip a rebuild.** It describes the profile, and
+    /// whether the overlay already carries the mod is a different question
+    /// with a different answer: anything that wrote the preference a moment
+    /// earlier leaves this `false` over an overlay that is stale. Reading it
+    /// as "the overlay is fine" once shipped an empty overlay under a swap
+    /// reported as applied.
     pub changed: bool,
 }
 
