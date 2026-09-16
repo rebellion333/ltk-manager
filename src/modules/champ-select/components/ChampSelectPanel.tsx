@@ -96,7 +96,12 @@ function ChampionMods({ champion, locked }: ChampionModsProps) {
   const lastReport = useChampSelectStore((state) => state.lastReport);
   const patcherRunning = usePatcherRunning();
 
-  const preferred = preferences.data?.[champion.alias]?.preferred ?? null;
+  /* An entry that is not there and an entry whose mod is `null` are different:
+     silence, and the reader having chosen no mod. Only the second is a choice,
+     and only the second draws a tick. */
+  const preference = preferences.data?.[champion.alias];
+  const preferred = preference?.preferred ?? null;
+  const chosen = preference !== undefined;
   const modIds = mods.data ?? [];
   const byId = new Map((installed.data ?? []).map((mod: InstalledMod) => [mod.id, mod]));
 
@@ -132,7 +137,7 @@ function ChampionMods({ champion, locked }: ChampionModsProps) {
             <ChampionModRow
               label={m.champ_select_no_mod_label()}
               detail={m.champ_select_no_mod_description()}
-              selected={preferred === null}
+              selected={chosen && preferred === null}
               disabled={setPreference.isPending}
               onSelect={() => choose(null)}
             />

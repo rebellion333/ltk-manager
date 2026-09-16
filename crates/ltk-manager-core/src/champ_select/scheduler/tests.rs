@@ -79,14 +79,24 @@ fn a_hover_is_acted_on_before_any_lock() {
     assert_eq!(wanted.mod_id, Some("wukong-mod".to_string()));
 }
 
+/// Silence is not a choice. Reading it as one made hovering a champion strip
+/// whatever the reader had enabled for it, which is what a live Practice Tool
+/// found on 2026-09-16: two mods enabled, Garen hovered, overlay left empty.
 #[test]
-fn a_champion_with_no_preference_wants_nothing_applied() {
-    let wanted = desired_for(&view(Some(GAREN), None), &roster(), &HashMap::new()).unwrap();
+fn a_champion_the_reader_never_set_is_left_alone() {
+    assert!(desired_for(&view(Some(GAREN), None), &roster(), &HashMap::new()).is_none());
+}
+
+/// The other half of the same distinction: an entry whose `preferred` is `None`
+/// is the reader having picked "no mod", and that one does disable.
+#[test]
+fn a_champion_set_to_no_mod_wants_the_unmodded_swap() {
+    let mut preferences = HashMap::new();
+    preferences.insert("Garen".to_string(), ChampionPreference::default());
+
+    let wanted = desired_for(&view(Some(GAREN), None), &roster(), &preferences).unwrap();
     assert_eq!(wanted.alias, "Garen");
-    assert_eq!(
-        wanted.mod_id, None,
-        "which is a swap to unmodded, not an absence of one"
-    );
+    assert_eq!(wanted.mod_id, None);
 }
 
 #[test]

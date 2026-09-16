@@ -48,9 +48,18 @@ fn champion_in_play(view: &ChampSelectView) -> Option<i32> {
 
 /// What should be applied for the champion select as it stands.
 ///
-/// `None` when there is no champion yet, or when the roster cannot name the one
+/// `None` when there is no champion yet, when the roster cannot name the one
 /// there is - a champion released after this install's cached roster is one the
-/// app cannot categorize mods for either, so there is nothing to apply.
+/// app cannot categorize mods for either - or when the reader has never said
+/// anything about that champion.
+///
+/// That last case is the one worth stating. A champion with no entry at all and
+/// a champion whose entry says "no mod" are different: the first is silence and
+/// the second is a choice. Reading silence as a choice makes picking a champion
+/// turn off whatever the reader had enabled for it, which a live Practice Tool
+/// on 2026-09-16 is what caught. **An entry existing is what makes this
+/// feature act**, so anything that writes a preference for a reason other than
+/// the reader choosing a mod has to answer this question again.
 pub fn desired_for(
     view: &ChampSelectView,
     roster: &ChampionRoster,
@@ -58,10 +67,11 @@ pub fn desired_for(
 ) -> Option<Desired> {
     let id = champion_in_play(view)?;
     let alias = roster.by_id(id)?.alias.clone();
-    let mod_id = preferences
-        .get(&alias)
-        .and_then(|preference| preference.preferred.clone());
-    Some(Desired { alias, mod_id })
+    let preference = preferences.get(&alias)?;
+    Some(Desired {
+        alias,
+        mod_id: preference.preferred.clone(),
+    })
 }
 
 /// Applies what the scheduler decides, and reports what the patcher is doing.
