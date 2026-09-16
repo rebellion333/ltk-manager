@@ -335,6 +335,50 @@ pub fn get_champion_preferences(
     library.0.champion_preferences(&config).into()
 }
 
+/// A champion and the mods installed for it.
+#[derive(Debug, Clone, Serialize, TS, specta::Type)]
+#[ts(export)]
+#[serde(rename_all = "camelCase")]
+pub struct ChampionMods {
+    pub champion: ChampionSummary,
+    pub mod_ids: Vec<String>,
+}
+
+/// Every champion the library holds a mod for, by the champion's name.
+///
+/// The roster is long and most of it is not worth a row: a reader configuring
+/// their champions wants the ones they have something to configure. Sorted
+/// here rather than in the interface, because the answer is a list and a list
+/// has an order.
+#[tauri::command]
+#[specta::specta]
+pub fn champions_with_mods(
+    state: State<ChampSelectState>,
+    library: State<ModLibraryState>,
+    settings: State<SettingsState>,
+) -> IpcResult<Vec<ChampionMods>> {
+    let config = settings.config();
+    let roster = state.roster();
+    let aliases: Vec<String> = roster.iter().map(|c| c.alias.clone()).collect();
+
+    let by_alias = match library.0.mods_by_champion(&config, &aliases) {
+        Ok(found) => found,
+        Err(e) => return IpcResult::from(Err::<Vec<ChampionMods>, _>(e)),
+    };
+
+    let mut found: Vec<ChampionMods> = roster
+        .into_iter()
+        .filter_map(|champion| {
+            by_alias.get(&champion.alias).map(|mod_ids| ChampionMods {
+                champion,
+                mod_ids: mod_ids.clone(),
+            })
+        })
+        .collect();
+    found.sort_by(|a, b| a.champion.name.cmp(&b.champion.name));
+    IpcResult::ok(found)
+}
+
 /// The mods the active profile keeps within reach, per champion.
 #[tauri::command]
 #[specta::specta]

@@ -1,4 +1,4 @@
-import { CheckCircleIcon, SpinnerGapIcon, WarningCircleIcon } from "@phosphor-icons/react";
+import { CheckCircleIcon, WarningCircleIcon } from "@phosphor-icons/react";
 import { match } from "ts-pattern";
 
 import { m } from "@/i18n";
@@ -29,8 +29,6 @@ function refusalText(why: Refusal): string {
 interface SwapStatusProps {
   /** What the scheduler last said, or `null` while it has said nothing. */
   report: SwapReport | null;
-  /** Whether a swap the reader asked for by hand is still in flight. */
-  pending: boolean;
 }
 
 /**
@@ -40,19 +38,7 @@ interface SwapStatusProps {
  * what the reader keeps instead, because a panel that only ever shows a tick is
  * a panel that lies the first time a rebuild does not fit.
  */
-export function SwapStatus({ report, pending }: SwapStatusProps) {
-  if (pending) {
-    return (
-      <p
-        data-ui="SwapStatus"
-        className="flex items-center gap-2 text-meta text-surface-300 select-none"
-      >
-        <SpinnerGapIcon className="h-4 w-4 shrink-0 animate-spin" />
-        {m.champ_select_working_status()}
-      </p>
-    );
-  }
-
+export function SwapStatus({ report }: SwapStatusProps) {
   if (!report) return null;
 
   const applied = report.status === "applied";

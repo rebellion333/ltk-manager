@@ -4,6 +4,7 @@ import {
   api,
   type AppError,
   type ChampionPreference,
+  type ChampionMods,
   type ChampionSummary,
   type ChampSelectStatus,
 } from "@/lib/tauri";
@@ -46,6 +47,15 @@ export const champSelectQueries = {
 
      `enabled` is off outside champion select rather than the whole roster
      riding on the boot path for a screen that may never open. */
+  /* Every champion the library holds a mod for. Read by the champions page,
+     which is the surface that exists outside a champion select. */
+  withMods: () =>
+    queryOptions<ChampionMods[], AppError>({
+      queryKey: champSelectKeys.withMods(),
+      queryFn: queryFn(api.champSelect.withMods),
+      staleTime: Infinity,
+    }),
+
   roster: (enabled: boolean) =>
     queryOptions<ChampionSummary[], AppError>({
       queryKey: champSelectKeys.roster(),

@@ -350,6 +350,15 @@ export const commands = {
 	/**  The mods the active profile keeps within reach, per champion. */
 	getChampionFavorites: () => __TAURI_INVOKE<({ ok: true; value: { [key in string]: string[] } }) & { error?: never } | ({ ok: false; error: AppErrorResponse }) & { value?: never }>("get_champion_favorites"),
 	/**
+	 *  Every champion the library holds a mod for, by the champion's name.
+	 * 
+	 *  The roster is long and most of it is not worth a row: a reader configuring
+	 *  their champions wants the ones they have something to configure. Sorted
+	 *  here rather than in the interface, because the answer is a list and a list
+	 *  has an order.
+	 */
+	championsWithMods: () => __TAURI_INVOKE<({ ok: true; value: ChampionMods[] }) & { error?: never } | ({ ok: false; error: AppErrorResponse }) & { value?: never }>("champions_with_mods"),
+	/**
 	 *  Mark a mod as one of a champion's favourites, or unmark it.
 	 * 
 	 *  Not a preference: nothing about the enabled set moves, no rebuild follows,
@@ -788,6 +797,12 @@ export type ChampSelectView = {
 	canStillChange: boolean,
 	/**  Champions on the ARAM bench, for a reroll or a swap. */
 	benchChampionIds: number[],
+};
+
+/**  A champion and the mods installed for it. */
+export type ChampionMods = {
+	champion: ChampionSummary,
+	modIds: string[],
 };
 
 /**

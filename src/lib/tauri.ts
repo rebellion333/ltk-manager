@@ -156,6 +156,7 @@ export type {
 } from "@/lib/bindings.gen";
 // Champion select's types, per ADR-0029.
 export type {
+  ChampionMods,
   ChampionSummary,
   ChampSelectStatus,
   ChampSelectView,
@@ -578,6 +579,7 @@ export const api = {
     roster: () => commands.championRoster().then(toResult),
     preferences: () => commands.getChampionPreferences().then(toResult),
     favorites: () => commands.getChampionFavorites().then(toResult),
+    withMods: () => commands.championsWithMods().then(toResult),
     setFavorite: (champion: string, modId: string, favorite: boolean) =>
       commands.setChampionFavorite(champion, modId, favorite).then(toResult),
     modsForChampion: (champion: string) => commands.modsForChampion(champion).then(toResult),

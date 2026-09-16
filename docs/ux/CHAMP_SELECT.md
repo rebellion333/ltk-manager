@@ -4,6 +4,7 @@
 
 | Date       | Change                                                         |
 | ---------- | -------------------------------------------------------------- |
+| 2026-09-16 | A champions page, so setup does not need a champion select     |
 | 2026-09-16 | Favourites per champion, beside the preferences and not inside |
 | 2026-09-16 | A preference for an uninstalled mod reads as no preference     |
 | 2026-09-16 | First draft: the panel, the scheduler, and the measured budget |
@@ -120,6 +121,7 @@ when the DLL goes in.
 | Surface            | Where                                | Says                                               |
 | ------------------ | ------------------------------------ | -------------------------------------------------- |
 | `ChampSelectPanel` | Global, on the first hover of a pick | The champion, its mods, and what the last swap did |
+| `ChampionsBrowser` | `/champions`                         | Every champion with mods, and what each applies    |
 | The library        | `/mods`, per mod                     | Unchanged. A preference moves the same enabled set |
 
 ### The panel
@@ -197,6 +199,19 @@ carrying has changed, decides whether it fits, and reports - so a choice made by
 panel and a choice applied automatically from a preference take the same path and cannot
 drift. A choice made with no game in sight is a preference like any other, and the next
 build picks it up.
+
+### The champions page
+
+The panel is where a choice is made under a clock. `/champions` is where it is made with
+time to think, and where one already made can be found and changed. Both draw the same rows
+from one component, because a reader who sets a champion up calmly has to recognise what
+they see when they next meet it with thirty seconds on the timer.
+
+Without it the feature could only be configured from inside the thing it exists to answer:
+a preference could be set only while the reader was also banning and trading, and a
+favourite could be unmarked only in the place it exists to save them from. The page lists
+the champions the library holds a mod for and no others - the roster is two hundred and
+forty names and the rest have nothing to configure.
 
 ### Favourites are not choices
 

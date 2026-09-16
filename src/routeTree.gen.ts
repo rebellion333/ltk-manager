@@ -13,6 +13,7 @@ import { Route as WorkshopRouteImport } from './routes/workshop'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as ModsRouteImport } from './routes/mods'
 import { Route as DiagnosticsRouteImport } from './routes/diagnostics'
+import { Route as ChampionsRouteImport } from './routes/champions'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as WorkshopIndexRouteImport } from './routes/workshop/index'
 import { Route as WorkshopProjectNameRouteImport } from './routes/workshop/$projectName'
@@ -38,6 +39,11 @@ const DiagnosticsRoute = DiagnosticsRouteImport.update({
   path: '/diagnostics',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ChampionsRoute = ChampionsRouteImport.update({
+  id: '/champions',
+  path: '/champions',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -61,6 +67,7 @@ const ModsFolderFolderIdRoute = ModsFolderFolderIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/champions': typeof ChampionsRoute
   '/diagnostics': typeof DiagnosticsRoute
   '/mods': typeof ModsRoute
   '/settings': typeof SettingsRoute
@@ -71,6 +78,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/champions': typeof ChampionsRoute
   '/diagnostics': typeof DiagnosticsRoute
   '/mods': typeof ModsRoute
   '/settings': typeof SettingsRoute
@@ -81,6 +89,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/champions': typeof ChampionsRoute
   '/diagnostics': typeof DiagnosticsRoute
   '/mods': typeof ModsRoute
   '/settings': typeof SettingsRoute
@@ -93,6 +102,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/champions'
     | '/diagnostics'
     | '/mods'
     | '/settings'
@@ -103,6 +113,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/champions'
     | '/diagnostics'
     | '/mods'
     | '/settings'
@@ -112,6 +123,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/champions'
     | '/diagnostics'
     | '/mods'
     | '/settings'
@@ -123,6 +135,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ChampionsRoute: typeof ChampionsRoute
   DiagnosticsRoute: typeof DiagnosticsRoute
   ModsRoute: typeof ModsRoute
   SettingsRoute: typeof SettingsRoute
@@ -158,6 +171,13 @@ declare module '@tanstack/react-router' {
       path: '/diagnostics'
       fullPath: '/diagnostics'
       preLoaderRoute: typeof DiagnosticsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/champions': {
+      id: '/champions'
+      path: '/champions'
+      fullPath: '/champions'
+      preLoaderRoute: typeof ChampionsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -207,6 +227,7 @@ const WorkshopRouteWithChildren = WorkshopRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ChampionsRoute: ChampionsRoute,
   DiagnosticsRoute: DiagnosticsRoute,
   ModsRoute: ModsRoute,
   SettingsRoute: SettingsRoute,

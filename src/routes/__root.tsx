@@ -190,6 +190,9 @@ function RootLayout() {
   useHotkeys("ctrl+1", () => navigate({ to: "/" }), { preventDefault: true });
   useHotkeys("ctrl+2", () => navigate({ to: "/mods" }), { preventDefault: true });
   useHotkeys("ctrl+3", () => navigate({ to: "/workshop" }), { preventDefault: true });
+  /* Fourth, though the tab sits third: the three that exist are muscle memory
+     and moving them costs more than the mismatch. */
+  useHotkeys("ctrl+4", () => navigate({ to: "/champions" }), { preventDefault: true });
   useHotkeys("ctrl+d", () => navigate({ to: "/diagnostics", search: { tab: "games" } }), {
     preventDefault: true,
   });

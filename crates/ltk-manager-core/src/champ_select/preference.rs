@@ -52,6 +52,35 @@ impl ModLibrary {
             .collect())
     }
 
+    /// The mods for each of `aliases`, in library order, skipping the ones with
+    /// none.
+    ///
+    /// One read of the index for the whole roster.
+    /// [`mods_for_champion`](Self::mods_for_champion) reads it once per call,
+    /// so asking it about two hundred and forty champions would read the
+    /// library two hundred and forty times.
+    pub fn mods_by_champion(
+        &self,
+        config: &Config,
+        aliases: &[String],
+    ) -> AppResult<std::collections::HashMap<String, Vec<String>>> {
+        let installed = self.get_installed_mods(config)?;
+        let reports = self.wad_reports().0.lock().get_all();
+
+        Ok(aliases
+            .iter()
+            .filter_map(|alias| {
+                let wanted = norm_key(&champion_display_name(alias));
+                let ids: Vec<String> = installed
+                    .iter()
+                    .filter(|m| applies_to(m, &reports, &wanted))
+                    .map(|m| m.id.clone())
+                    .collect();
+                (!ids.is_empty()).then(|| (alias.clone(), ids))
+            })
+            .collect())
+    }
+
     /// What the active profile wants per champion, minus what nothing can serve.
     ///
     /// A preference names a mod by id, and a mod the reader uninstalled leaves

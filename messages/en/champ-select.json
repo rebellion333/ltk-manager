@@ -1,5 +1,11 @@
 {
   "$schema": "https://inlang.com/schema/inlang-message-format",
+  "champions_empty_description": "Install a mod for a champion and it shows up here",
+  "champions_empty_title": "No champions to set up yet",
+  "champions_nav_label": "Champions",
+  "champions_no_match_empty": "No champion by that name",
+  "champions_pick_one_hint": "Pick a champion to set what it applies",
+  "champions_search_placeholder": "Search champions",
   "champ_select_budget_hint": "A swap costs about {rebuild} here, and there are about {tail} left after champion select closes.",
   "champ_select_close_action": "Close",
   "champ_select_description": "The mod this champion applies, swapped before the game loads",
@@ -25,6 +31,5 @@
   "champ_select_status_refused_patcher_building": "The patcher is still building, so your choice goes into that build.",
   "champ_select_status_refused_patcher_idle": "The patcher isn't running, so there's no overlay to swap. Your choice is saved for the next build.",
   "champ_select_unknown_champion_description": "The manager doesn't know champion {id} yet. Open the League client once so it can read the roster again.",
-  "champ_select_unknown_champion_title": "Unrecognised champion",
-  "champ_select_working_status": "Rebuilding the overlay"
+  "champ_select_unknown_champion_title": "Unrecognised champion"
 }

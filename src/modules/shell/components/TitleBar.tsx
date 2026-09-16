@@ -14,6 +14,7 @@ import {
   CollectionIcon,
   IconButton,
   LootIcon,
+  MaskIcon,
   MinionIcon,
   PoroIcon,
   ScuttleIcon,
@@ -36,6 +37,7 @@ import { UpdateButton } from "./UpdateButton";
 const navItems = [
   { to: "/", label: m.home_nav_label(), icon: HouseIcon, exact: true },
   { to: "/mods", label: m.library_nav_label(), icon: CollectionIcon, exact: false },
+  { to: "/champions", label: m.champions_nav_label(), icon: MaskIcon, exact: false },
   { to: "/workshop", label: m.workshop_nav_label(), icon: LootIcon, exact: false },
 ] as const;
 

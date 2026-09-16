@@ -102,6 +102,7 @@ migrated![
     champion_roster,
     get_champion_preferences,
     get_champion_favorites,
+    champions_with_mods,
     set_champion_favorite,
     mods_for_champion,
     set_champion_preference,

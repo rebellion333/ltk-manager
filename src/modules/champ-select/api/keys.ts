@@ -4,5 +4,6 @@ export const champSelectKeys = {
   preferences: () => [...champSelectKeys.all, "preferences"] as const,
   favorites: () => [...champSelectKeys.all, "favorites"] as const,
   roster: () => [...champSelectKeys.all, "roster"] as const,
+  withMods: () => [...champSelectKeys.all, "with-mods"] as const,
   mods: (champion: string) => [...champSelectKeys.all, "mods", champion] as const,
 };
