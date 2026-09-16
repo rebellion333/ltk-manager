@@ -21,6 +21,7 @@
 use std::path::PathBuf;
 
 use camino::Utf8PathBuf;
+use fs_err as fs;
 use ltk_manager_core::overlay::{OverlayBuildInputs, build_overlay};
 
 const CHUNKS: usize = 4;
@@ -46,7 +47,7 @@ fn main() {
         .join("assets")
         .join("ltk_probe")
         .join(champion.to_lowercase());
-    std::fs::create_dir_all(dir.as_std_path()).expect("the content directory");
+    fs::create_dir_all(dir.as_std_path()).expect("the content directory");
     for i in 0..CHUNKS {
         let mut bytes = vec![0u8; CHUNK_BYTES];
         let mut x = (i as u32 + 7) | 1;
@@ -56,7 +57,7 @@ fn main() {
             x ^= x << 5;
             *b = x as u8;
         }
-        std::fs::write(dir.join(format!("staged_{i}.bin")).as_std_path(), &bytes).expect("a chunk");
+        fs::write(dir.join(format!("staged_{i}.bin")).as_std_path(), &bytes).expect("a chunk");
     }
 
     let project = ltk_mod_project::ModProject {
@@ -74,7 +75,7 @@ fn main() {
         thumbnail: None,
         hashtables: Vec::new(),
     };
-    std::fs::write(
+    fs::write(
         mod_dir.join("mod.config.json").as_std_path(),
         serde_json::to_string_pretty(&project).unwrap(),
     )
@@ -103,7 +104,7 @@ fn main() {
         .join("FINAL")
         .join("Champions")
         .join(&wad_name);
-    let size = std::fs::metadata(built.as_std_path())
+    let size = fs::metadata(built.as_std_path())
         .map(|m| m.len())
         .unwrap_or(0);
     println!(

@@ -17,6 +17,7 @@
 use std::path::PathBuf;
 
 use camino::Utf8PathBuf;
+use fs_err as fs;
 
 /// Chunks per champion, and bytes per chunk. Small: the point is that the
 /// archive is rebuilt and redirected, not that the mod carries anything.
@@ -66,7 +67,7 @@ fn main() {
             .join("assets")
             .join("ltk_probe")
             .join(champion.to_lowercase());
-        std::fs::create_dir_all(dir.as_std_path()).expect("the content directory");
+        fs::create_dir_all(dir.as_std_path()).expect("the content directory");
         for i in 0..CHUNKS {
             let mut bytes = vec![0u8; CHUNK_BYTES];
             let mut x = ((c as u32) << 16 | i as u32) | 1;
@@ -76,25 +77,25 @@ fn main() {
                 x ^= x << 5;
                 *b = x as u8;
             }
-            std::fs::write(dir.join(format!("probe_{i}.bin")).as_std_path(), &bytes)
+            fs::write(dir.join(format!("probe_{i}.bin")).as_std_path(), &bytes)
                 .expect("a probe chunk");
         }
     }
 
     let name = "champ-select-probe";
-    std::fs::write(
+    fs::write(
         root.join("mod.config.json").as_std_path(),
         serde_json::to_string_pretty(&project(name, &champions)).expect("the config"),
     )
     .expect("the config file");
 
     let out = PathBuf::from(&out);
-    let writer = std::io::BufWriter::new(std::fs::File::create(&out).expect("the output file"));
+    let writer = std::io::BufWriter::new(fs::File::create(&out).expect("the output file"));
     ltk_mod_project::ProjectPacker::new(project(name, &champions), root)
         .pack(ltk_mod_project::modpkg::ModpkgFormat::new(writer))
         .expect("the pack");
 
-    let size = std::fs::metadata(&out).map(|m| m.len()).unwrap_or(0);
+    let size = fs::metadata(&out).map(|m| m.len()).unwrap_or(0);
     println!(
         "wrote {} ({} bytes) touching {} champion archive(s): {}",
         out.display(),

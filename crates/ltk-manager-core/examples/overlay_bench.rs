@@ -33,6 +33,7 @@ use std::path::Path;
 use std::time::{Duration, Instant};
 
 use camino::{Utf8Path, Utf8PathBuf};
+use fs_err as fs;
 use ltk_manager_core::overlay::{OverlayBuildInputs, build_overlay};
 
 /// How many override chunks the synthetic mod carries, and how big each is.
@@ -66,7 +67,7 @@ fn write_mod(mod_dir: &Utf8Path, wad_name: &str, seed: u8) {
         thumbnail: None,
         hashtables: Vec::new(),
     };
-    std::fs::write(
+    fs::write(
         mod_dir.join("mod.config.json").as_std_path(),
         serde_json::to_vec_pretty(&config).unwrap(),
     )
@@ -75,7 +76,7 @@ fn write_mod(mod_dir: &Utf8Path, wad_name: &str, seed: u8) {
     let wad_dir = mod_dir.join("content").join("base").join(wad_name);
     for i in 0..OVERRIDE_COUNT {
         let dir = wad_dir.join("assets").join("overlay_bench");
-        std::fs::create_dir_all(dir.as_std_path()).expect("the override directory");
+        fs::create_dir_all(dir.as_std_path()).expect("the override directory");
         // Incompressible, so the build pays a realistic compression cost rather
         // than zstd's best case over a run of zeroes.
         let mut bytes = vec![0u8; OVERRIDE_BYTES];
@@ -86,7 +87,7 @@ fn write_mod(mod_dir: &Utf8Path, wad_name: &str, seed: u8) {
             x ^= x << 5;
             *b = x as u8;
         }
-        std::fs::write(dir.join(format!("chunk_{i}.bin")).as_std_path(), &bytes)
+        fs::write(dir.join(format!("chunk_{i}.bin")).as_std_path(), &bytes)
             .expect("an override file");
     }
 }
@@ -147,7 +148,7 @@ fn stats(label: &str, mut values: Vec<f64>) {
 /// variants that carry only voice lines.
 fn champion_wads(game: &Utf8Path) -> Vec<(String, u64)> {
     let dir = game.join("DATA").join("FINAL").join("Champions");
-    let mut wads: Vec<(String, u64)> = std::fs::read_dir(dir.as_std_path())
+    let mut wads: Vec<(String, u64)> = fs::read_dir(dir.as_std_path())
         .expect("the champions directory")
         .flatten()
         .filter_map(|entry| {
@@ -196,7 +197,7 @@ fn sweep(game: &Utf8Path, limit: usize) {
         // to the overlay, which is the shape of a swap: everything else in the
         // profile is already built and gets skipped.
         let mod_dir = scratch.join(format!("mod{round}"));
-        std::fs::create_dir_all(mod_dir.as_std_path()).unwrap();
+        fs::create_dir_all(mod_dir.as_std_path()).unwrap();
         write_mod(&mod_dir, wad_name, round as u8 + 1);
 
         let ms = timed(inputs(game, &overlay_root, &state, &mod_dir)).as_secs_f64() * 1000.0;
@@ -206,7 +207,7 @@ fn sweep(game: &Utf8Path, limit: usize) {
             .join("FINAL")
             .join("Champions")
             .join(wad_name);
-        let built_mb = std::fs::metadata(built.as_std_path())
+        let built_mb = fs::metadata(built.as_std_path())
             .map(|m| m.len() as f64 / (1024.0 * 1024.0))
             .unwrap_or(0.0);
         println!(
@@ -250,7 +251,7 @@ fn main() {
         .join("FINAL")
         .join("Champions")
         .join(&wad_name);
-    let size_mb = std::fs::metadata(source.as_std_path())
+    let size_mb = fs::metadata(source.as_std_path())
         .map(|m| m.len() as f64 / (1024.0 * 1024.0))
         .unwrap_or(0.0);
     println!("{wad_name} is {size_mb:.1} MB, {repeats} repeats\n");
@@ -260,7 +261,7 @@ fn main() {
     let mod_dir = scratch.join("mod");
     let overlay_root = scratch.join("overlay");
     let state = scratch.join("state");
-    std::fs::create_dir_all(mod_dir.as_std_path()).unwrap();
+    fs::create_dir_all(mod_dir.as_std_path()).unwrap();
 
     let mut cold = Vec::new();
     let mut incremental = Vec::new();
@@ -269,8 +270,8 @@ fn main() {
     for round in 0..repeats {
         // Cold: nothing carried over but the game index, which a real profile
         // also keeps and which is not what a swap pays for.
-        let _ = std::fs::remove_file(state.join("overlay.json").as_std_path());
-        let _ = std::fs::remove_dir_all(overlay_root.as_std_path());
+        let _ = fs::remove_file(state.join("overlay.json").as_std_path());
+        let _ = fs::remove_dir_all(overlay_root.as_std_path());
         write_mod(&mod_dir, &wad_name, round as u8 * 3 + 1);
         cold.push(timed(inputs(&game, &overlay_root, &state, &mod_dir)).as_secs_f64() * 1000.0);
 

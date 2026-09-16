@@ -9,6 +9,7 @@
 
 use std::path::{Path, PathBuf};
 
+use fs_err as fs;
 use ltk_manager_core::lcu::client::LcuClient;
 use ltk_manager_core::lcu::lockfile::LeagueLockfile;
 use ltk_manager_core::lcu::socket::{LcuSocket, event_name_for};
@@ -19,7 +20,7 @@ const CHAMP_SELECT_URI: &str = "/lol-champ-select/v1/session";
 fn write(dir: &Path, seq: &mut u32, resource: &str, body: &str) {
     let name = resource.trim_start_matches('/').replace('/', "_");
     let path = dir.join(format!("{seq:04}-{name}.json"));
-    if let Err(e) = std::fs::write(&path, body) {
+    if let Err(e) = fs::write(&path, body) {
         eprintln!("could not write {}: {e}", path.display());
         return;
     }
@@ -34,7 +35,7 @@ fn main() {
         std::process::exit(2);
     };
     let out = PathBuf::from(out);
-    std::fs::create_dir_all(&out).expect("output directory");
+    fs::create_dir_all(&out).expect("output directory");
 
     let lockfile = LeagueLockfile::read(Path::new(&root))
         .filter(LeagueLockfile::is_live)
