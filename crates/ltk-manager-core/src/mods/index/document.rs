@@ -158,6 +158,7 @@ impl Default for LibraryIndex {
             enabled_mods: Vec::new(),
             mod_order: Vec::new(),
             layer_states: HashMap::new(),
+            champion_preferences: HashMap::new(),
             created_at: Utc::now(),
             last_used: Utc::now(),
         };

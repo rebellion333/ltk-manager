@@ -37,7 +37,9 @@ mod types;
 #[cfg(test)]
 pub(crate) mod test_support;
 
-pub use analysis::categorize::{ChampionRoster, DerivedCategorization};
+pub use analysis::categorize::{
+    ChampionRoster, DerivedCategorization, champion_display_name, norm_key,
+};
 pub use analysis::checksum_mismatches::{ChecksumMismatchInfo, ChecksumMismatchState};
 pub use analysis::linked_bins::{LinkedBinOffenderInfo, LinkedBinState};
 pub use analysis::wad_reports::{ModWadReport, WadReportState};
@@ -53,7 +55,8 @@ pub use health::{HealthCheckBasis, HealthCheckReadiness, ModHealth, ModHealthVer
 pub use index::document::{ModArchiveFormat, ModStorage};
 pub use index::layout_migration::{FailedConversion, LayoutMigrationReport, LayoutMigrationState};
 pub use types::{
-    BulkInstallResult, EditModMetadataArgs, InstalledMod, LibraryFolder, ModLicense, Profile,
+    BulkInstallResult, ChampionPreference, EditModMetadataArgs, InstalledMod, LibraryFolder,
+    ModLicense, Profile,
 };
 
 use crate::config::Config;

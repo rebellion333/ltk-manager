@@ -734,8 +734,12 @@ export type ChampSelectView = {
 	timerPhase: string,
 	timeLeftMs: number,
 	/**
-	 *  Whether the champion can still change after a lock: a trade is pending
-	 *  or the ARAM bench is open.
+	 *  Whether the champion can still change after a lock: an offered trade is
+	 *  open, or the ARAM bench is.
+	 * 
+	 *  A trade *slot* does not count. The client lists one per teammate in
+	 *  every mode, so counting those reports every Practice Tool select as
+	 *  still changeable, which a live capture on 2026-09-15 is what caught.
 	 */
 	canStillChange: boolean,
 	/**  Champions on the ARAM bench, for a reroll or a swap. */

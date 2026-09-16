@@ -68,10 +68,40 @@ pub struct Profile {
     /// Per-mod layer enabled/disabled states: mod_id → (layer_name → enabled).
     #[serde(default)]
     pub layer_states: HashMap<String, HashMap<String, bool>>,
+    /// What the reader wants applied to each champion, keyed by the champion's
+    /// alias - `MonkeyKing`, never `Wukong` - because the alias is the one
+    /// spelling the client does not localize.
+    ///
+    /// A record rather than a cache: nothing recomputes it, and losing it loses
+    /// something the reader chose. It lives on the profile because a preference
+    /// is about a set of enabled mods, and that set is what a profile is. See
+    /// ADR-0041.
+    #[serde(default)]
+    pub champion_preferences: HashMap<String, ChampionPreference>,
     /// Creation timestamp
     pub created_at: DateTime<Utc>,
     /// Last time this profile was used/switched to
     pub last_used: DateTime<Utc>,
+}
+
+/// What one champion's mods should do, as the reader set them.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
+#[cfg_attr(feature = "ts", ts(export))]
+#[serde(rename_all = "camelCase", default)]
+pub struct ChampionPreference {
+    /// The mod applied when this champion is picked, if any.
+    ///
+    /// `None` means the champion has no mod of its own, which is different from
+    /// having one that is currently disabled.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[cfg_attr(feature = "ts", ts(optional = nullable))]
+    pub preferred: Option<String>,
+    /// Mods the reader keeps within reach for this champion, in their order.
+    ///
+    /// Champion select offers these first. A mod being here says nothing about
+    /// whether it is enabled.
+    pub favorites: Vec<String>,
 }
 
 /// A mod layer shown in the UI.
@@ -284,6 +314,7 @@ mod tests {
                 enabled_mods: Vec::new(),
                 mod_order: Vec::new(),
                 layer_states: HashMap::new(),
+                champion_preferences: HashMap::new(),
                 created_at: Utc::now(),
                 last_used: Utc::now(),
             }],
@@ -311,6 +342,7 @@ mod tests {
                 enabled_mods: Vec::new(),
                 mod_order: Vec::new(),
                 layer_states: HashMap::new(),
+                champion_preferences: HashMap::new(),
                 created_at: Utc::now(),
                 last_used: Utc::now(),
             }],
@@ -338,6 +370,7 @@ mod tests {
                 enabled_mods: Vec::new(),
                 mod_order: Vec::new(),
                 layer_states: HashMap::new(),
+                champion_preferences: HashMap::new(),
                 created_at: Utc::now(),
                 last_used: Utc::now(),
             }],
@@ -374,6 +407,7 @@ mod tests {
             enabled_mods: Vec::new(),
             mod_order: Vec::new(),
             layer_states: HashMap::new(),
+            champion_preferences: HashMap::new(),
             created_at: Utc::now(),
             last_used: Utc::now(),
         });

@@ -126,7 +126,12 @@ impl ChampionRoster {
 
 /// Map a champion's internal name to its display name (`"MonkeyKing"` →
 /// `"Wukong"`); names without an override pass through unchanged.
-fn champion_display_name(internal: &str) -> String {
+///
+/// Public because a champion the client names by its alias has to be matched
+/// against what a mod was categorized under, and the alias is the only spelling
+/// that is not localized: the client returns display names in the reader's own
+/// language.
+pub fn champion_display_name(internal: &str) -> String {
     match internal {
         "MonkeyKing" => "Wukong".to_string(),
         other => other.to_string(),
@@ -156,7 +161,7 @@ fn map_slug_from_segments(segments: &[String]) -> Option<&'static str> {
 /// Normalization key for de-duplicating derived values against each other and
 /// against user-declared metadata: lowercase, alphanumerics only. Lets a
 /// derived `"Aatrox"` collapse against a user-typed `"aatrox"`.
-fn norm_key(s: &str) -> String {
+pub fn norm_key(s: &str) -> String {
     s.chars()
         .filter(char::is_ascii_alphanumeric)
         .flat_map(char::to_lowercase)
