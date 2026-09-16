@@ -62,6 +62,7 @@ function answer(command: string): unknown {
     return [{ id: "mod-a", displayName: "Shadow Kayn", authors: ["Someone"] }];
   }
   if (command === "get_mod_thumbnails") return {};
+  if (command === "get_patcher_status") return { running: true, phase: "Running", session: null };
   return null;
 }
 
@@ -140,6 +141,26 @@ describe("ChampSelectPanel", () => {
     expect(
       await screen.findByText(/A rebuild needs about 1\.1 s and there were 400 ms left/),
     ).toBeVisible();
+  });
+
+  /// The scheduler stays quiet about a refusal a later tick could undo, and an
+  /// idle patcher is the one that lasts the whole select. Without this the
+  /// panel answers a click with nothing at all.
+  it("says the patcher is not running before anything is clicked", async () => {
+    mockInvoke.mockImplementation((command: string) => {
+      if (command === "get_patcher_status") {
+        return Promise.resolve({
+          ok: true,
+          value: { running: false, phase: "Idle", session: null },
+        });
+      }
+      return Promise.resolve({ ok: true, value: answer(command) });
+    });
+
+    useChampSelectStore.getState().started(view());
+    renderPanel();
+
+    expect(await screen.findByText(/The patcher isn't running/)).toBeVisible();
   });
 
   /// The roster arriving late must not read as a champion it cannot name.

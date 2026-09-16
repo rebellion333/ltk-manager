@@ -164,6 +164,13 @@ the frontend's. `notEnoughTime` is the one that carries numbers, and it carries 
 them: a reader who is told a swap did not fit deserves to see the two figures that did not
 fit.
 
+Only four of the seven ever reach the line. The scheduler reports a refusal it can never
+take back and stays quiet about one a later tick could turn into a swap, because repeating
+"still building" once a second says the same thing sixty times. That is right for the two
+that resolve on their own, and wrong for `patcherIdle`, which lasts the whole select and
+would otherwise answer a click with nothing at all. So the panel draws that one standing,
+from the patcher's own status, before anything is clicked.
+
 ## What a choice does
 
 One call moves two things together, which is why it is one call. The profile records the

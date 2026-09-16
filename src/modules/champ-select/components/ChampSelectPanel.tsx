@@ -4,6 +4,7 @@ import { Button, Dialog, EmptyState, Spinner, useToast } from "@/components";
 import { errorSummary, m } from "@/i18n";
 import type { ChampionSummary, ChampSelectView, InstalledMod } from "@/lib/tauri";
 import { ModThumbnails, useInstalledMods, useModThumbnail } from "@/modules/library";
+import { usePatcherRunning } from "@/modules/patcher";
 import { useQueuedDialog } from "@/stores";
 
 import { champSelectQueries, useSetChampionPreference } from "../api";
@@ -93,6 +94,7 @@ function ChampionMods({ champion, locked }: ChampionModsProps) {
   const installed = useInstalledMods();
   const setPreference = useSetChampionPreference();
   const lastReport = useChampSelectStore((state) => state.lastReport);
+  const patcherRunning = usePatcherRunning();
 
   const preferred = preferences.data?.[champion.alias]?.preferred ?? null;
   const modIds = mods.data ?? [];
@@ -148,9 +150,18 @@ function ChampionMods({ champion, locked }: ChampionModsProps) {
         </ModThumbnails>
       )}
 
-      <SwapStatus report={lastReport} pending={setPreference.isPending} />
+      {/* The scheduler reports a refusal it can never take back, and stays quiet
+          about one that a later tick could turn into a swap. An idle patcher is
+          the quiet one that lasts, so the panel says it rather than answering a
+          click with nothing. */}
+      {!patcherRunning && (
+        <p className="text-meta text-surface-300 select-none">
+          {m.champ_select_status_refused_patcher_idle()}
+        </p>
+      )}
+      {patcherRunning && <SwapStatus report={lastReport} pending={setPreference.isPending} />}
 
-      {status.data && (
+      {patcherRunning && status.data && (
         <p className="text-fine text-surface-400 select-none">
           {m.champ_select_budget_hint({
             rebuild: formatSpan(status.data.rebuildMs),
