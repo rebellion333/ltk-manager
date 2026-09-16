@@ -27,7 +27,7 @@ const CHUNK_BYTES: usize = 32 * 1024;
 fn project(name: &str, champions: &[String]) -> ltk_mod_project::ModProject {
     ltk_mod_project::ModProject {
         name: name.to_string(),
-        display_name: "Champion select timing probe".to_string(),
+        display_name: format!("Probe {name}"),
         version: "1.0.0".to_string(),
         description: "Synthetic probe for measuring when the game opens a champion's archive. \
                       Generated content, no game assets, nothing visible in play."
@@ -82,7 +82,12 @@ fn main() {
         }
     }
 
-    let name = "champ-select-probe";
+    /* From the file name, so a sweep can pack several probes over the same
+    champions and tell them apart in the library. */
+    let name = std::path::Path::new(&out)
+        .file_stem()
+        .and_then(|stem| stem.to_str())
+        .unwrap_or("champ-select-probe");
     fs::write(
         root.join("mod.config.json").as_std_path(),
         serde_json::to_string_pretty(&project(name, &champions)).expect("the config"),
