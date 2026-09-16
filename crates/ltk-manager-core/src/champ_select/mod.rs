@@ -19,6 +19,8 @@
 
 pub mod budget;
 pub mod decision;
+pub mod swap;
 
 pub use budget::Budget;
 pub use decision::{Refusal, SwapContext, Verdict, decide};
+pub use swap::{SwapOutcome, forget_wad_layouts};
