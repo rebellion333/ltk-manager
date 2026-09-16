@@ -47,22 +47,65 @@ impl ModLibrary {
         Ok(self
             .get_installed_mods(config)?
             .into_iter()
-            .filter(|installed| {
-                let declared = installed.champions.iter();
-                let derived = reports
-                    .get(&installed.id)
-                    .into_iter()
-                    .flat_map(|report| report.derived.champions.iter());
-                declared
-                    .chain(derived)
-                    .any(|champion| norm_key(champion) == wanted)
-            })
+            .filter(|installed| applies_to(installed, &reports, &wanted))
             .map(|installed| installed.id)
             .collect())
     }
 
-    /// The preferences the active profile holds.
+    /// What the active profile wants per champion, minus what nothing can serve.
+    ///
+    /// A preference names a mod by id, and a mod the reader uninstalled leaves
+    /// that id naming nothing. Left in, every champion select for that champion
+    /// asks for a mod the library does not hold, the swap fails, and the panel
+    /// reports a failure the reader can do nothing about - for good, since a
+    /// reinstall issues a fresh id. Uninstalling a mod is an ordinary thing to
+    /// do, so this is a state the app has to absorb rather than report.
+    ///
+    /// **The whole entry goes, not just its mod.** An entry whose `preferred`
+    /// is `None` is the reader having chosen no mod, which disables the ones
+    /// they have; clearing the field would turn a dangling preference into that
+    /// choice and switch off mods nobody asked to switch off. An absent entry
+    /// is silence, and silence leaves the champion alone.
+    ///
+    /// Nothing is written back. The next preference for that champion
+    /// overwrites the dangling entry, and until then it is a few dead bytes in
+    /// `library.json` that nothing reads. A read that quietly rewrites the
+    /// library is a worse trade than that.
+    ///
+    /// Favourites go with the entry, which is free today because nothing reads
+    /// them. When something does, the shape needs a third state - an entry that
+    /// carries favourites and no decision - and this is where that shows up.
     pub fn champion_preferences(
+        &self,
+        config: &Config,
+    ) -> AppResult<std::collections::HashMap<String, ChampionPreference>> {
+        let recorded = self.recorded_champion_preferences(config)?;
+        if recorded.is_empty() {
+            return Ok(recorded);
+        }
+
+        /* One read of the index for every champion rather than one each:
+        `mods_for_champion` reads the whole library, and a reader with twenty
+        champions set would pay for it twenty times. */
+        let installed = self.get_installed_mods(config)?;
+        let reports = self.wad_reports().0.lock().get_all();
+
+        Ok(recorded
+            .into_iter()
+            .filter(|(alias, preference)| {
+                let Some(wanted_mod) = preference.preferred.as_deref() else {
+                    return true;
+                };
+                let wanted_champion = norm_key(&champion_display_name(alias));
+                installed
+                    .iter()
+                    .any(|m| m.id == wanted_mod && applies_to(m, &reports, &wanted_champion))
+            })
+            .collect())
+    }
+
+    /// The preferences as the profile holds them, dangling ones and all.
+    fn recorded_champion_preferences(
         &self,
         config: &Config,
     ) -> AppResult<std::collections::HashMap<String, ChampionPreference>> {
@@ -155,3 +198,23 @@ impl ModLibrary {
 
 #[cfg(test)]
 mod tests;
+
+/// Whether `installed` is categorized under `wanted`, a normalized champion key.
+///
+/// A mod declares its champions and the WAD scan derives more from what it
+/// actually writes. Either is enough, which is what makes a mod that declares
+/// nothing still findable.
+fn applies_to(
+    installed: &crate::mods::InstalledMod,
+    reports: &std::collections::HashMap<String, crate::mods::ModWadReport>,
+    wanted: &str,
+) -> bool {
+    let declared = installed.champions.iter();
+    let derived = reports
+        .get(&installed.id)
+        .into_iter()
+        .flat_map(|report| report.derived.champions.iter());
+    declared
+        .chain(derived)
+        .any(|champion| norm_key(champion) == wanted)
+}

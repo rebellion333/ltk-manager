@@ -214,3 +214,93 @@ fn a_mod_that_is_not_for_this_champion_is_refused() {
     assert!(matches!(error, AppError::ModNotFound(_)));
     assert!(enabled(&library, &config).is_empty(), "nothing was written");
 }
+
+/// Uninstalling a mod is ordinary, and a reinstall issues a fresh id, so a
+/// preference left pointing at the old one would fail every champion select for
+/// that champion for good. It reads as silence instead.
+#[test]
+fn a_preference_for_an_uninstalled_mod_is_not_returned() {
+    let dir = tempfile::tempdir().unwrap();
+    let (library, config) = library_with(dir.path(), &[("garen-a", &["Garen"])]);
+    library
+        .apply_champion_preference(&config, "Garen", Some("garen-a"))
+        .unwrap();
+
+    // The mod goes, the preference stays behind pointing at nothing.
+    library
+        .mutate_index(&config, |_storage, index| {
+            index.mods.retain(|entry| entry.id != "garen-a");
+            Ok(())
+        })
+        .unwrap();
+
+    /* That the profile still holds it, first. Without this the assertion below
+    passes just as well on a fixture that never wrote the preference at all,
+    which is how three tests in this module once passed for the wrong
+    reason. */
+    assert!(
+        library
+            .recorded_champion_preferences(&config)
+            .unwrap()
+            .contains_key("Garen"),
+        "the dangling preference is on the profile, which is the state under test"
+    );
+
+    let preferences = library.champion_preferences(&config).unwrap();
+    assert!(
+        !preferences.contains_key("Garen"),
+        "the whole entry goes: an entry whose mod is None is the reader having \
+         chosen no mod, which would switch off mods nobody asked to switch off"
+    );
+}
+
+/// The other half: an explicit "no mod" is a decision and survives, because
+/// nothing about it can dangle.
+#[test]
+fn a_preference_for_no_mod_at_all_survives() {
+    let dir = tempfile::tempdir().unwrap();
+    let (library, config) = library_with(dir.path(), &[("garen-a", &["Garen"])]);
+    library
+        .apply_champion_preference(&config, "Garen", None)
+        .unwrap();
+
+    let preferences = library.champion_preferences(&config).unwrap();
+    assert!(preferences.contains_key("Garen"));
+    assert_eq!(preferences["Garen"].preferred, None);
+}
+
+/// A mod that is still installed but no longer categorized under the champion
+/// cannot serve the preference either, and `apply` would refuse it.
+#[test]
+fn a_preference_for_a_mod_that_no_longer_fits_the_champion_is_not_returned() {
+    let dir = tempfile::tempdir().unwrap();
+    let (library, config) = library_with(dir.path(), &[("garen-a", &["Garen"])]);
+    library
+        .apply_champion_preference(&config, "Garen", Some("garen-a"))
+        .unwrap();
+
+    library
+        .wad_reports()
+        .0
+        .lock()
+        .upsert_many(vec![ModWadReport {
+            mod_id: "garen-a".to_string(),
+            affected_wads: Vec::new(),
+            wad_count: 0,
+            override_count: 0,
+            content_fingerprint: None,
+            game_index_fingerprint: 0,
+            computed_at: String::new(),
+            is_stale: false,
+            derived: crate::mods::DerivedCategorization {
+                champions: vec!["Kayn".to_string()],
+                maps: Vec::new(),
+                tags: Vec::new(),
+                primary_champion: Some("Kayn".to_string()),
+            },
+        }])
+        .unwrap();
+
+    let preferences = library.champion_preferences(&config).unwrap();
+    assert!(!preferences.contains_key("Garen"));
+}

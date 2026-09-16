@@ -4,6 +4,7 @@
 
 | Date       | Change                                                         |
 | ---------- | -------------------------------------------------------------- |
+| 2026-09-16 | A preference for an uninstalled mod reads as no preference     |
 | 2026-09-16 | First draft: the panel, the scheduler, and the measured budget |
 
 Each edit of this document adds a row at the top. The table keeps the last ten rows.
@@ -195,6 +196,13 @@ carrying has changed, decides whether it fits, and reports - so a choice made by
 panel and a choice applied automatically from a preference take the same path and cannot
 drift. A choice made with no game in sight is a preference like any other, and the next
 build picks it up.
+
+**A choice outlives the mod it named, and that is not a failure.** Uninstalling leaves the
+preference pointing at an id the library no longer holds, and a reinstall issues a new one,
+so the old id never comes back. Such a preference is read as no preference at all: the
+champion is left alone, the panel shows nothing chosen, and choosing again overwrites it.
+The whole entry is what goes rather than the mod alone, because an entry with no mod is the
+reader having chosen _no mod_, which switches off the ones they have.
 
 ## Why a swap rebuilds whole archives
 
