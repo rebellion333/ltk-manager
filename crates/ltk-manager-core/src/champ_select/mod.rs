@@ -23,6 +23,7 @@ pub mod preference;
 pub mod scheduler;
 pub mod swap;
 
+pub use crate::mods::ChampionPreference;
 pub use budget::Budget;
 pub use decision::{Refusal, SwapContext, Verdict, decide};
 pub use preference::PreferenceChange;

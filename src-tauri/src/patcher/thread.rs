@@ -6,7 +6,7 @@
 //! payload types those events carry.
 
 use serde::Serialize;
-use tauri::{AppHandle, Emitter};
+use tauri::{AppHandle, Emitter, Manager};
 use ts_rs::TS;
 
 use crate::error::{AppError, AppErrorResponse};
@@ -95,6 +95,13 @@ impl TauriPatcherEvents {
 
 impl PatcherEvents for TauriPatcherEvents {
     fn phase_changed(&self, phase: PatcherPhase) {
+        // A session that is starting has served no game yet, and one that ended
+        // leaves nothing to protect.
+        if phase != PatcherPhase::Patching {
+            if let Some(patcher) = self.app_handle.try_state::<crate::patcher::PatcherState>() {
+                patcher.set_game_attached(false);
+            }
+        }
         let _ = crate::tray::set_tray_state(
             self.app_handle.clone(),
             tray_state_for(phase, self.is_workshop),
@@ -129,6 +136,11 @@ impl PatcherEvents for TauriPatcherEvents {
     }
 
     fn game_attached(&self, pid: Option<u64>) {
+        // From here the game is reading the overlay archives, so nothing may
+        // rewrite them until the next session.
+        if let Some(patcher) = self.app_handle.try_state::<crate::patcher::PatcherState>() {
+            patcher.set_game_attached(true);
+        }
         let _ = self
             .app_handle
             .emit("patcher-game-attached", GameAttachedPayload { pid });

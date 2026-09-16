@@ -335,6 +335,20 @@ export const commands = {
 	 *  announced itself to nobody.
 	 */
 	getLcuSnapshot: () => __TAURI_INVOKE<({ ok: true; value: LcuSnapshot }) & { error?: never } | ({ ok: false; error: AppErrorResponse }) & { value?: never }>("get_lcu_snapshot"),
+	/**  What the scheduler is planning for, for a frontend that has just mounted. */
+	getChampSelectStatus: () => __TAURI_INVOKE<({ ok: true; value: ChampSelectStatus }) & { error?: never } | ({ ok: false; error: AppErrorResponse }) & { value?: never }>("get_champ_select_status"),
+	/**  What the active profile wants for each champion. */
+	getChampionPreferences: () => __TAURI_INVOKE<({ ok: true; value: { [key in string]: ChampionPreference_Serialize } }) & { error?: never } | ({ ok: false; error: AppErrorResponse }) & { value?: never }>("get_champion_preferences"),
+	/**  Every installed mod that applies to a champion, by the champion's alias. */
+	modsForChampion: (champion: string) => __TAURI_INVOKE<({ ok: true; value: string[] }) & { error?: never } | ({ ok: false; error: AppErrorResponse }) & { value?: never }>("mods_for_champion", { champion }),
+	/**
+	 *  Choose the mod a champion applies, and rebuild the overlay for it.
+	 * 
+	 *  The scheduler does this on its own for the champion in play. This is the
+	 *  same thing asked for by hand, from the library or from champion select, and
+	 *  it goes through the same path so both cannot drift.
+	 */
+	setChampionPreference: (champion: string, modId: string | null) => __TAURI_INVOKE<({ ok: true; value: null }) & { error?: never } | ({ ok: false; error: AppErrorResponse }) & { value?: never }>("set_champion_preference", { champion, modId }),
 };
 
 /* Types */
@@ -723,6 +737,18 @@ export type Category =
 /**  Mod library state checks (index integrity). */
 "library";
 
+/**  The scheduler's view of the world, for a frontend that has just mounted. */
+export type ChampSelectStatus = {
+	/**  The champion and mod the overlay should be carrying, when there is one. */
+	wanted: DesiredMod | null,
+	/**  What it was last made to carry. */
+	applied: DesiredMod | null,
+	/**  What a rebuild is currently expected to cost on this machine. */
+	rebuildMs: number,
+	/**  How long there is after champion select ends, on this machine. */
+	tailMs: number,
+};
+
 /**  What crosses to the frontend: the local player's part of the session. */
 export type ChampSelectView = {
 	gameId: number,
@@ -744,6 +770,45 @@ export type ChampSelectView = {
 	canStillChange: boolean,
 	/**  Champions on the ARAM bench, for a reroll or a swap. */
 	benchChampionIds: number[],
+};
+
+/**  What one champion's mods should do, as the reader set them. */
+export type ChampionPreference = ChampionPreference_Serialize | ChampionPreference_Deserialize;
+
+/**  What one champion's mods should do, as the reader set them. */
+export type ChampionPreference_Deserialize = {
+	/**
+	 *  The mod applied when this champion is picked, if any.
+	 * 
+	 *  `None` means the champion has no mod of its own, which is different from
+	 *  having one that is currently disabled.
+	 */
+	preferred?: string | null,
+	/**
+	 *  Mods the reader keeps within reach for this champion, in their order.
+	 * 
+	 *  Champion select offers these first. A mod being here says nothing about
+	 *  whether it is enabled.
+	 */
+	favorites?: string[],
+};
+
+/**  What one champion's mods should do, as the reader set them. */
+export type ChampionPreference_Serialize = {
+	/**
+	 *  The mod applied when this champion is picked, if any.
+	 * 
+	 *  `None` means the champion has no mod of its own, which is different from
+	 *  having one that is currently disabled.
+	 */
+	preferred?: string | null,
+	/**
+	 *  Mods the reader keeps within reach for this champion, in their order.
+	 * 
+	 *  Champion select offers these first. A mod being here says nothing about
+	 *  whether it is enabled.
+	 */
+	favorites: string[],
 };
 
 /**  One named spell and every file declaring its object. */
@@ -987,6 +1052,11 @@ export type DecodedIncident = {
 	scanStatusCode: string | null,
 	failure: string | null,
 	overlayDetail: string | null,
+};
+
+export type DesiredMod = {
+	champion: string,
+	modId: string | null,
 };
 
 /**  Full diagnostic report returned by `run_diagnostics`. */

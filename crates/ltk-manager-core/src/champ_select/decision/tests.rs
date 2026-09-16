@@ -167,8 +167,8 @@ fn a_slow_machine_refuses_with_both_numbers() {
     assert_eq!(
         verdict,
         Verdict::Refuse(Refusal::NotEnoughTime {
-            needed: Duration::from_millis(5600),
-            available: budget.tail,
+            needed_ms: 5600,
+            available_ms: budget.tail.as_millis() as u64,
         })
     );
 

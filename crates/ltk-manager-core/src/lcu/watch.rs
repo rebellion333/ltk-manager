@@ -170,10 +170,13 @@ fn candidate_roots(configured: &LeagueRoot, discovered: Vec<PathBuf>) -> Vec<Pat
 
 /// The first candidate whose lockfile names a live client.
 ///
+/// Public because the roster fetch needs the same answer the watch does, and
+/// two ways of finding the running client is two things to keep in step.
+///
 /// With nothing configured the watch hunts for nothing. No League path means
 /// the manager is not set up for League at all, and following a client it was
 /// never pointed at would be reaching past what the reader asked for.
-fn find_live_client(configured: &LeagueRoot) -> Option<(PathBuf, LeagueLockfile)> {
+pub fn find_live_client(configured: &LeagueRoot) -> Option<(PathBuf, LeagueLockfile)> {
     configured.as_ref()?;
     let discovered = crate::launcher::install::installed_patchlines()
         .into_iter()

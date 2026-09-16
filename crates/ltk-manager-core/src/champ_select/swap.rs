@@ -25,8 +25,6 @@ use crate::config::Config;
 use crate::error::{AppResult, Utf8PathExt};
 use crate::mods::ModLibrary;
 
-use super::budget::Budget;
-
 /// What one swap did.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SwapOutcome {
@@ -89,9 +87,10 @@ impl ModLibrary {
     /// second answer to a question that was already answered, from worse
     /// information.
     ///
-    /// `budget` is updated with how long the rebuild actually took, so the
-    /// machine's own timing is what the next decision uses.
-    pub fn rebuild_for_swap(&self, config: &Config, budget: &mut Budget) -> AppResult<SwapOutcome> {
+    /// How long it took comes back rather than being folded in here. The
+    /// budget belongs to whatever is scheduling, and counting one rebuild in
+    /// two places would teach it the same lesson twice.
+    pub fn rebuild_for_swap(&self, config: &Config) -> AppResult<SwapOutcome> {
         let profile_dir = self.profile_dir(config)?;
         let layouts_forgotten = forget_wad_layouts(&profile_dir)?;
 
@@ -100,13 +99,8 @@ impl ModLibrary {
         let rebuilt_in = started.elapsed();
 
         self.record_overlay_build(build.outcome);
-        budget.observe_rebuild(rebuilt_in);
 
-        tracing::info!(
-            "Swap rebuilt the overlay in {} ms, and the budget now plans for {} ms",
-            rebuilt_in.as_millis(),
-            budget.rebuild.as_millis()
-        );
+        tracing::info!("Swap rebuilt the overlay in {} ms", rebuilt_in.as_millis());
         Ok(SwapOutcome {
             rebuilt_in,
             layouts_forgotten,

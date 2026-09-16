@@ -33,7 +33,13 @@ pub struct SwapContext<'a> {
 }
 
 /// Why a swap was not attempted, in the reader's terms rather than the code's.
-#[derive(Debug, Clone, PartialEq, Eq)]
+///
+/// Crosses IPC as a code with its fields, never as a sentence: the frontend
+/// owns every string a reader sees (ADR-0017).
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS, specta::Type))]
+#[cfg_attr(feature = "ts", ts(export))]
+#[serde(rename_all = "camelCase", tag = "code")]
 pub enum Refusal {
     /// The patcher is not up, so there is no overlay a game would read.
     PatcherIdle,
@@ -48,9 +54,14 @@ pub enum Refusal {
     /// Another build of this overlay is running.
     BuildInFlight,
     /// There is not enough of champion select left.
+    ///
+    /// Both numbers travel, in milliseconds, so the interface can say how short
+    /// the machine came rather than only that it did.
     NotEnoughTime {
-        needed: Duration,
-        available: Duration,
+        #[cfg_attr(feature = "ts", ts(type = "number"))]
+        needed_ms: u64,
+        #[cfg_attr(feature = "ts", ts(type = "number"))]
+        available_ms: u64,
     },
 }
 
@@ -123,8 +134,8 @@ pub fn decide(context: &SwapContext<'_>, budget: &Budget) -> Verdict {
     let available = available(view, budget);
     if !budget.fits(available) {
         return Verdict::Refuse(Refusal::NotEnoughTime {
-            needed: budget.needed(),
-            available,
+            needed_ms: budget.needed().as_millis() as u64,
+            available_ms: available.as_millis() as u64,
         });
     }
     Verdict::Allow { available }

@@ -106,6 +106,11 @@ pub fn run(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     let launcher_state = LauncherState::new(&app_handle, &settings.config)?;
     let launcher = Arc::clone(launcher_state.launcher());
     let lcu_state = crate::commands::LcuState::new(&app_handle, &settings.config);
+    let champ_select_state = crate::commands::ChampSelectState::new(
+        &app_handle,
+        library.clone(),
+        crate::state::get_app_data_dir(&app_handle).as_deref(),
+    );
 
     app.manage(settings_state);
     app.manage(patcher_state);
@@ -116,6 +121,7 @@ pub fn run(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     app.manage(telemetry_state);
     app.manage(launcher_state);
     app.manage(lcu_state);
+    app.manage(champ_select_state);
     app.manage(crate::commands::launcher::LaunchState::default());
     app.manage(linked_bins);
     app.manage(checksum_mismatches);
@@ -205,6 +211,9 @@ pub fn handle_run_event(app_handle: &tauri::AppHandle, event: tauri::RunEvent) {
         // rather than left to notice the process going away.
         let lcu: tauri::State<'_, crate::commands::LcuState> = app_handle.state();
         lcu.shutdown();
+
+        let champ_select: tauri::State<'_, crate::commands::ChampSelectState> = app_handle.state();
+        champ_select.shutdown();
     }
 }
 

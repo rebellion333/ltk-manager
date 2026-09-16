@@ -86,7 +86,7 @@ pub struct Profile {
 
 /// What one champion's mods should do, as the reader set them.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
-#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS, specta::Type))]
 #[cfg_attr(feature = "ts", ts(export))]
 #[serde(rename_all = "camelCase", default)]
 pub struct ChampionPreference {

@@ -18,7 +18,7 @@ pub use ltk_manager_core::patcher::{
 };
 
 use crate::error::{AppError, AppResult};
-use std::sync::atomic::Ordering;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
 use ltk_manager_core::patcher::host::PatcherHost;
@@ -30,27 +30,48 @@ use parking_lot::Mutex;
 /// closure or does one bounded operation, so no caller can hold the patcher lock
 /// across a blocking wait or a second lock. [`Self::handle`] is the one way out,
 /// for handing the shared state to the core session thread.
-pub struct PatcherState(Arc<Mutex<PatcherStateInner>>);
+pub struct PatcherState {
+    inner: Arc<Mutex<PatcherStateInner>>,
+    /// Whether the DLL has entered a game in the session now running.
+    ///
+    /// The phase does not say this: a session stays `Patching` from before the
+    /// first game until it is stopped, and the moment the overlay stops being
+    /// safe to change is the attach rather than the phase.
+    game_attached: Arc<AtomicBool>,
+}
 
 impl PatcherState {
     pub fn new() -> Self {
-        Self(Arc::new(Mutex::new(PatcherStateInner::new())))
+        Self {
+            inner: Arc::new(Mutex::new(PatcherStateInner::new())),
+            game_attached: Arc::new(AtomicBool::new(false)),
+        }
+    }
+
+    /// Whether a game attached in the running session.
+    pub fn game_attached(&self) -> bool {
+        self.game_attached.load(Ordering::SeqCst)
+    }
+
+    /// Record that the DLL entered a game, or that a new session cleared it.
+    pub fn set_game_attached(&self, attached: bool) {
+        self.game_attached.store(attached, Ordering::SeqCst);
     }
 
     /// The shared state itself, for [`PatcherThread::start`].
     pub fn handle(&self) -> &Arc<Mutex<PatcherStateInner>> {
-        &self.0
+        &self.inner
     }
 
     /// Read the state under the lock. The closure bounds the guard's lifetime.
     pub fn with<T>(&self, f: impl FnOnce(&PatcherStateInner) -> T) -> T {
-        let inner = self.0.lock();
+        let inner = self.inner.lock();
         f(&inner)
     }
 
     /// Mutate the state under the lock.
     pub fn with_mut<T>(&self, f: impl FnOnce(&mut PatcherStateInner) -> T) -> T {
-        let mut inner = self.0.lock();
+        let mut inner = self.inner.lock();
         f(&mut inner)
     }
 

@@ -30,7 +30,7 @@ pub use champions::ChampionSummary;
 pub use client::LcuClient;
 pub use gameflow::GameflowPhase;
 pub use lockfile::LeagueLockfile;
-pub use watch::{LcuEvent, LcuObserver, LcuWatch};
+pub use watch::{LcuEvent, LcuObserver, LcuWatch, find_live_client};
 
 /// Whether a League client is answering, and on which port.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

@@ -97,6 +97,11 @@ migrated![
     switch_league_install,
     // League client
     get_lcu_snapshot,
+    // Champion select
+    get_champ_select_status,
+    get_champion_preferences,
+    mods_for_champion,
+    set_champion_preference,
 ];
 
 /// The builder the bindings are generated from and the handler is built out of.

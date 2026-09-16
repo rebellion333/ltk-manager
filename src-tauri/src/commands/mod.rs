@@ -28,6 +28,7 @@
 
 mod app;
 mod bin;
+pub(crate) mod champ_select;
 mod deep_link;
 mod diagnostics;
 mod document_assets;
@@ -63,6 +64,7 @@ mod workshop;
 
 pub use app::*;
 pub use bin::*;
+pub use champ_select::*;
 pub use deep_link::*;
 pub use diagnostics::*;
 pub use folders::*;
