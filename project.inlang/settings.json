@@ -5,6 +5,7 @@
   "modules": ["./node_modules/@inlang/plugin-message-format/dist/index.js"],
   "plugin.inlang.messageFormat": {
     "pathPattern": [
+      "./messages/{locale}/champ-select.json",
       "./messages/{locale}/deep-link.json",
       "./messages/{locale}/diagnostics.json",
       "./messages/{locale}/editor.json",

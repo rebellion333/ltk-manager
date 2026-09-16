@@ -6,4 +6,4 @@ import type { Refusal } from "./Refusal";
  *
  * A code and typed fields rather than a sentence, per ADR-0017.
  */
-export type SwapReport = { "status": "applied", champion: string, mod_id?: string | null, took_ms: number, } | { "status": "refused", champion: string, mod_id?: string | null, why: Refusal, } | { "status": "failed", champion: string, mod_id?: string | null, detail: string, };
+export type SwapReport = { "status": "applied", champion: string, modId?: string | null, tookMs: number, } | { "status": "refused", champion: string, modId?: string | null, why: Refusal, } | { "status": "failed", champion: string, modId?: string | null, detail: string, };

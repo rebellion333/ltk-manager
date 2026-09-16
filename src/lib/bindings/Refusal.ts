@@ -6,4 +6,4 @@
  * Crosses IPC as a code with its fields, never as a sentence: the frontend
  * owns every string a reader sees (ADR-0017).
  */
-export type Refusal = { "code": "patcherIdle" } | { "code": "patcherBuilding" } | { "code": "gameAlreadyRunning" } | { "code": "gameStarting" } | { "code": "champSelectOver" } | { "code": "buildInFlight" } | { "code": "notEnoughTime", needed_ms: number, available_ms: number, };
+export type Refusal = { "code": "patcherIdle" } | { "code": "patcherBuilding" } | { "code": "gameAlreadyRunning" } | { "code": "gameStarting" } | { "code": "champSelectOver" } | { "code": "buildInFlight" } | { "code": "notEnoughTime", neededMs: number, availableMs: number, };

@@ -154,6 +154,14 @@ export type {
   ReferenceResult,
   SpellCatalog,
 } from "@/lib/bindings.gen";
+// Champion select's types, per ADR-0029.
+export type {
+  ChampionSummary,
+  ChampSelectStatus,
+  ChampSelectView,
+  DesiredMod,
+  LcuSnapshot,
+} from "@/lib/bindings.gen";
 // The ignore rules' type, per ADR-0029.
 export type { IgnoreRules } from "@/lib/bindings.gen";
 export type { ProjectText, ProjectTextFile, Revision } from "@/lib/bindings.gen";
@@ -562,6 +570,16 @@ export const api = {
     telemetryIdentity: () => commands.telemetryIdentity().then(toResult),
     resetTelemetrySecret: () => commands.resetTelemetrySecret().then(toResult),
     trackUiError: (error: UiError) => commands.trackUiError(error).then(toResult),
+  },
+
+  // Champion select, on tauri-specta.
+  champSelect: {
+    status: () => commands.getChampSelectStatus().then(toResult),
+    roster: () => commands.championRoster().then(toResult),
+    preferences: () => commands.getChampionPreferences().then(toResult),
+    modsForChampion: (champion: string) => commands.modsForChampion(champion).then(toResult),
+    setPreference: (champion: string, modId: string | null) =>
+      commands.setChampionPreference(champion, modId).then(toResult),
   },
 
   // Launcher, on tauri-specta.

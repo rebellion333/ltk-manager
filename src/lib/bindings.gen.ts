@@ -337,6 +337,14 @@ export const commands = {
 	getLcuSnapshot: () => __TAURI_INVOKE<({ ok: true; value: LcuSnapshot }) & { error?: never } | ({ ok: false; error: AppErrorResponse }) & { value?: never }>("get_lcu_snapshot"),
 	/**  What the scheduler is planning for, for a frontend that has just mounted. */
 	getChampSelectStatus: () => __TAURI_INVOKE<({ ok: true; value: ChampSelectStatus }) & { error?: never } | ({ ok: false; error: AppErrorResponse }) & { value?: never }>("get_champ_select_status"),
+	/**
+	 *  The champion roster, so the interface can name the ids champion select speaks in.
+	 * 
+	 *  The scheduler's copy rather than a second fetch: whatever it cannot name, the
+	 *  interface cannot name either, and one roster is what keeps the two saying the
+	 *  same thing about the same pick.
+	 */
+	championRoster: () => __TAURI_INVOKE<({ ok: true; value: ChampionSummary[] }) & { error?: never } | ({ ok: false; error: AppErrorResponse }) & { value?: never }>("champion_roster"),
 	/**  What the active profile wants for each champion. */
 	getChampionPreferences: () => __TAURI_INVOKE<({ ok: true; value: { [key in string]: ChampionPreference_Serialize } }) & { error?: never } | ({ ok: false; error: AppErrorResponse }) & { value?: never }>("get_champion_preferences"),
 	/**  Every installed mod that applies to a champion, by the champion's alias. */
@@ -809,6 +817,14 @@ export type ChampionPreference_Serialize = {
 	 *  whether it is enabled.
 	 */
 	favorites: string[],
+};
+
+/**  One champion as the client lists it. */
+export type ChampionSummary = {
+	id: number,
+	name: string,
+	/**  The internal name, which is the stem of the champion's WAD. */
+	alias: string,
 };
 
 /**  One named spell and every file declaring its object. */

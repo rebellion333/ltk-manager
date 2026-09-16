@@ -208,6 +208,15 @@ impl Scheduler {
         self.shared.wake.notify_all();
     }
 
+    /// The roster the scheduler is naming champions with.
+    ///
+    /// The one the frontend reads too, so a champion the scheduler cannot name
+    /// is one the interface cannot name either, rather than the two disagreeing
+    /// about which pick is even understood.
+    pub fn roster(&self) -> ChampionRoster {
+        self.shared.state.lock().unwrap().roster.clone()
+    }
+
     /// What the scheduler is planning for, for a caller that wants to draw it.
     pub fn snapshot(&self) -> (Option<Desired>, Option<Desired>, Budget) {
         let state = self.shared.state.lock().unwrap();

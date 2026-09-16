@@ -18,7 +18,7 @@ const CACHE_FILE: &str = "champion-summary.json";
 
 /// One champion as the client lists it.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS, specta::Type))]
 #[cfg_attr(feature = "ts", ts(export))]
 #[serde(rename_all = "camelCase")]
 pub struct ChampionSummary {
@@ -81,6 +81,11 @@ impl ChampionRoster {
 
     pub fn is_empty(&self) -> bool {
         self.champions.is_empty()
+    }
+
+    /// Every champion, for a caller that has to name ids it was handed.
+    pub fn champions(&self) -> &[ChampionSummary] {
+        &self.champions
     }
 }
 

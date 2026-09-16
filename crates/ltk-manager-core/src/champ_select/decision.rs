@@ -39,7 +39,11 @@ pub struct SwapContext<'a> {
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 #[cfg_attr(feature = "ts", derive(ts_rs::TS, specta::Type))]
 #[cfg_attr(feature = "ts", ts(export))]
-#[serde(rename_all = "camelCase", tag = "code")]
+#[serde(
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase",
+    tag = "code"
+)]
 pub enum Refusal {
     /// The patcher is not up, so there is no overlay a game would read.
     PatcherIdle,

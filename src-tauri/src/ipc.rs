@@ -99,6 +99,7 @@ migrated![
     get_lcu_snapshot,
     // Champion select
     get_champ_select_status,
+    champion_roster,
     get_champion_preferences,
     mods_for_champion,
     set_champion_preference,

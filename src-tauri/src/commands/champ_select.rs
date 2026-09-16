@@ -13,7 +13,7 @@ use crate::state::SettingsState;
 use ltk_manager_core::champ_select::{
     Budget, ChampionPreference, Desired, Refusal, Report, Scheduler, Swapper,
 };
-use ltk_manager_core::lcu::champions::ChampionRoster;
+use ltk_manager_core::lcu::champions::{ChampionRoster, ChampionSummary};
 use ltk_manager_core::lcu::LcuEvent;
 use ltk_manager_core::mods::ModLibrary;
 use ltk_manager_core::patcher::PatcherPhase;
@@ -23,7 +23,11 @@ use ltk_manager_core::patcher::PatcherPhase;
 /// A code and typed fields rather than a sentence, per ADR-0017.
 #[derive(Debug, Clone, Serialize, TS, specta::Type)]
 #[ts(export)]
-#[serde(rename_all = "camelCase", tag = "status")]
+#[serde(
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase",
+    tag = "status"
+)]
 pub enum SwapReport {
     /// The overlay now carries this champion's mod.
     Applied {
@@ -205,6 +209,10 @@ impl ChampSelectState {
         self.scheduler.lock().stop();
     }
 
+    fn roster(&self) -> Vec<ChampionSummary> {
+        self.scheduler.lock().roster().champions().to_vec()
+    }
+
     fn status(&self) -> ChampSelectStatus {
         let (wanted, applied, budget) = self.scheduler.lock().snapshot();
         let Budget { rebuild, tail } = budget;
@@ -222,6 +230,17 @@ impl ChampSelectState {
 #[specta::specta]
 pub fn get_champ_select_status(state: State<ChampSelectState>) -> IpcResult<ChampSelectStatus> {
     IpcResult::ok(state.status())
+}
+
+/// The champion roster, so the interface can name the ids champion select speaks in.
+///
+/// The scheduler's copy rather than a second fetch: whatever it cannot name, the
+/// interface cannot name either, and one roster is what keeps the two saying the
+/// same thing about the same pick.
+#[tauri::command]
+#[specta::specta]
+pub fn champion_roster(state: State<ChampSelectState>) -> IpcResult<Vec<ChampionSummary>> {
+    IpcResult::ok(state.roster())
 }
 
 /// Every installed mod that applies to a champion, by the champion's alias.

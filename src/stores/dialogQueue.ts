@@ -7,6 +7,9 @@ import { create } from "zustand";
  * The order is the decision, and its reasons are ADR-0022.
  */
 export const DIALOG_ORDER = [
+  /* First because it is the only one with a deadline: champion select ends on
+     its own clock, and every other dialog here is still true a minute later. */
+  "champ-select",
   "protocol-install",
   "wad-scan-failed",
   "install-mismatch",

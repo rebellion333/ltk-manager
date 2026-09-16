@@ -19,6 +19,7 @@ import {
   WEIGHT_TIERS,
 } from "@/lib/fonts";
 import type { OpenOn } from "@/lib/tauri";
+import { ChampSelectPanel, useChampSelectEvents } from "@/modules/champ-select";
 import { ProtocolInstallDialogLazy, useDeepLinkListener } from "@/modules/deep-link";
 import { useCleanGameWatch, useIncidentListeners } from "@/modules/diagnostics";
 import {
@@ -102,6 +103,7 @@ function RootLayout() {
   useCleanGameWatch();
   useLeagueSession();
   useInstallMismatchWatch();
+  useChampSelectEvents();
   useOverscrollSpring();
   useZoomHotkeys();
 
@@ -237,6 +239,7 @@ function RootLayout() {
       <ModHealthSweepListener />
       <WadScanFailedDialog />
       <InstallMismatchDialog />
+      <ChampSelectPanel />
       <LinkedBinWarningDialog />
       <DiagnosticsNoticeDialog />
       <Suspense fallback={null}>
