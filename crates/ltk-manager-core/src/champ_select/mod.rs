@@ -20,9 +20,11 @@
 pub mod budget;
 pub mod decision;
 pub mod preference;
+pub mod scheduler;
 pub mod swap;
 
 pub use budget::Budget;
 pub use decision::{Refusal, SwapContext, Verdict, decide};
 pub use preference::PreferenceChange;
+pub use scheduler::{Desired, Report, Scheduler, Swapper, desired_for};
 pub use swap::{SwapOutcome, forget_wad_layouts};
