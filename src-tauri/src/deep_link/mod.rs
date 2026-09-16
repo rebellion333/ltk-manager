@@ -115,7 +115,7 @@ impl DeepLinkState {
             return;
         }
 
-        raise_main_window(app_handle);
+        crate::commands::shell::raise_main_window(app_handle);
         request.emit_to(app_handle);
     }
 
@@ -135,7 +135,7 @@ pub fn take_pending(app_handle: &tauri::AppHandle) -> Option<DeepLinkRequest> {
     let state: tauri::State<'_, DeepLinkState> = app_handle.state();
     let pending = state.take_pending();
     if pending.is_some() {
-        raise_main_window(app_handle);
+        crate::commands::shell::raise_main_window(app_handle);
     }
     pending
 }
@@ -325,16 +325,7 @@ pub fn handle_argv(app_handle: &tauri::AppHandle, argv: &[String]) {
         }
     }
 
-    raise_main_window(app_handle);
-}
-
-/// Brings the main window forward, for a link the reader is meant to look at.
-fn raise_main_window(app_handle: &tauri::AppHandle) {
-    if let Some(window) = app_handle.get_webview_window("main") {
-        let _ = window.show();
-        let _ = window.unminimize();
-        let _ = window.set_focus();
-    }
+    crate::commands::shell::raise_main_window(app_handle);
 }
 
 fn handle_single(app_handle: &tauri::AppHandle, raw_url: &str) {

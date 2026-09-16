@@ -47,6 +47,34 @@ pub(crate) fn reveal_in_explorer_inner(path: &str) -> AppResult<()> {
     Ok(())
 }
 
+/// Brings the main window forward, for something the reader is meant to see.
+///
+/// Three calls because there are two ways to be away and neither implies the
+/// other: [`minimize_to_tray`] hides the window where the setting says so, and
+/// minimizes it where it does not.
+///
+/// Each result is logged rather than dropped. Windows refuses a foreground
+/// change to a process that does not already own the foreground, so this
+/// failing is a thing that happens rather than a thing that cannot, and a
+/// window that did not come forward should say which call declined.
+pub(crate) fn raise_main_window(app: &tauri::AppHandle) {
+    use tauri::Manager;
+
+    let Some(window) = app.get_webview_window("main") else {
+        tracing::warn!("No main window to raise");
+        return;
+    };
+    if let Err(e) = window.show() {
+        tracing::debug!("Could not show the window: {e}");
+    }
+    if let Err(e) = window.unminimize() {
+        tracing::debug!("Could not unminimize the window: {e}");
+    }
+    if let Err(e) = window.set_focus() {
+        tracing::debug!("Could not focus the window: {e}");
+    }
+}
+
 /// Minimizes the window to the system tray if the setting is enabled,
 /// otherwise performs a regular minimize.
 #[tauri::command]

@@ -54,7 +54,7 @@ mod profiles;
 mod releases;
 mod ritobin;
 mod settings;
-mod shell;
+pub(crate) mod shell;
 mod skin;
 mod spell;
 mod storage;

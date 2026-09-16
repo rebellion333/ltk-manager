@@ -14,7 +14,7 @@ use ltk_manager_core::champ_select::{
     Budget, ChampionPreference, Desired, Refusal, Report, Scheduler, Swapper,
 };
 use ltk_manager_core::lcu::champions::{ChampionRoster, ChampionSummary};
-use ltk_manager_core::lcu::LcuEvent;
+use ltk_manager_core::lcu::{ChampSelectView, LcuEvent};
 use ltk_manager_core::mods::ModLibrary;
 use ltk_manager_core::patcher::PatcherPhase;
 
@@ -159,6 +159,8 @@ impl Swapper for ShellSwapper {
 pub struct ChampSelectState {
     scheduler: Mutex<Scheduler>,
     library: ModLibrary,
+    /// The champion the window was last raised for, cleared with each select.
+    raised_for: Mutex<Option<String>>,
 }
 
 impl ChampSelectState {
@@ -177,6 +179,7 @@ impl ChampSelectState {
         Self {
             scheduler: Mutex::new(Scheduler::start(roster, swapper)),
             library,
+            raised_for: Mutex::new(None),
         }
     }
 
@@ -193,8 +196,71 @@ impl ChampSelectState {
                 Ok(preferences) => scheduler.set_preferences(preferences),
                 Err(e) => tracing::warn!("Could not read the champion preferences: {e}"),
             }
+            *self.raised_for.lock() = None;
         }
+        let roster = scheduler.roster();
         scheduler.observe(event);
+        drop(scheduler);
+
+        match event {
+            LcuEvent::ChampSelectStarted(view) | LcuEvent::ChampSelectChanged(view) => {
+                self.raise_if_undecided(app, view, &roster)
+            }
+            _ => {}
+        }
+    }
+
+    /// Bring the window forward for a pick the reader has to answer.
+    ///
+    /// Here rather than in the panel, because the panel is in a webview the
+    /// reader has minimized and a minimized webview is not a reliable place to
+    /// run anything. A frontend attempt at this went unnoticed on 2026-09-16
+    /// with no way to tell whether it had run at all; the backend is running
+    /// either way and says what it did.
+    ///
+    /// Silent when the champion's mod is already decided. A swap the scheduler
+    /// settles on its own asks the reader for nothing, and taking the screen
+    /// for it takes it from a game about to start.
+    fn raise_if_undecided(&self, app: &AppHandle, view: &ChampSelectView, roster: &ChampionRoster) {
+        let Some(id) = view.locked_champion_id.or(view.hovered_champion_id) else {
+            return;
+        };
+        let Some(alias) = roster.by_id(id).map(|champion| champion.alias.clone()) else {
+            return;
+        };
+
+        // Once per champion, so finishing a ban does not fight the window.
+        {
+            let mut raised = self.raised_for.lock();
+            if raised.as_deref() == Some(alias.as_str()) {
+                return;
+            }
+            *raised = Some(alias.clone());
+        }
+
+        let config = app.state::<SettingsState>().config();
+        let decided = self
+            .library
+            .champion_preferences(&config)
+            .map(|preferences| preferences.contains_key(&alias))
+            .unwrap_or(false);
+        if decided {
+            tracing::debug!(%alias, "Pick already decided, leaving the window alone");
+            return;
+        }
+
+        let offers = self
+            .library
+            .mods_for_champion(&config, &alias)
+            .map(|mods| !mods.is_empty())
+            .unwrap_or(false);
+        if !offers {
+            tracing::debug!(%alias, "No mods for the pick, leaving the window alone");
+            return;
+        }
+
+        tracing::info!(%alias, "Raising the window for an undecided pick");
+        crate::commands::shell::raise_main_window(app);
     }
 
     /// Hand the scheduler a roster a live client answered with.

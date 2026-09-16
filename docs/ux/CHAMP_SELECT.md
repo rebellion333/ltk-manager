@@ -144,6 +144,15 @@ under that, what a swap costs on this machine and how long there is.
 Closing the panel is about that champion select. It does not turn the feature off, it does
 not stop the scheduler, and the next champion select raises it again.
 
+**It takes the screen.** The panel opens in a window the reader is not looking at, because
+they are in the League client. A taskbar flash was tried first and went unnoticed, so the
+window brings itself forward instead, from the backend rather than from the panel: a
+minimized webview is not a reliable place to run anything, and a frontend attempt left no
+way to tell whether it had run at all. This interrupts banning and trading,
+which is the cost of arriving while the choice can still be acted on. It happens only when
+there is a choice to make: mods installed for that champion and nothing recorded for it.
+A champion whose mod is already decided is swapped without the reader ever being told.
+
 ### The status line
 
 The line is the honest half of the panel. A swap that did not happen says so, names why, and

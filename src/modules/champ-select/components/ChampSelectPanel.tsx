@@ -103,6 +103,7 @@ function ChampionMods({ champion, locked }: ChampionModsProps) {
   const preferred = preference?.preferred ?? null;
   const chosen = preference !== undefined;
   const modIds = mods.data ?? [];
+
   const byId = new Map((installed.data ?? []).map((mod: InstalledMod) => [mod.id, mod]));
 
   const choose = (modId: string | null) => {
